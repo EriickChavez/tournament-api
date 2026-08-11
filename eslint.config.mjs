@@ -1,21 +1,23 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
-
 export default tseslint.config(
-  {
-    ignores: ['dist/**', 'node_modules/**'],
-  },
-
+  { ignores: ['dist/**', 'node_modules/**', 'drizzle.config.ts'] },
   js.configs.recommended,
-
   ...tseslint.configs.recommended,
-
   {
     files: ['**/*.ts'],
     languageOptions: {
       parserOptions: {
         projectService: true,
       },
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+        },
+      ],
     },
   },
 );
