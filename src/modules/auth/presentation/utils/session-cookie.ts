@@ -12,3 +12,15 @@ export function setSessionCookie(res: Response, session: Session): void {
         expires: session.expiresAt,
     });
 }
+
+export function clearSessionCookie(res: Response): void {
+    res.clearCookie(COOKIE_NAME, {
+        httpOnly: true,
+        secure: env.NODE_ENV === 'production',
+        sameSite: 'lax',
+    });
+}
+
+export function getSessionIdFromRequest(cookies: Record<string, unknown>): string | undefined {
+    return typeof cookies[COOKIE_NAME] === 'string' ? cookies[COOKIE_NAME] : undefined;
+}
