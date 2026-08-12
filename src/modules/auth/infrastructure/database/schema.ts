@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, pgEnum, index } from 'drizzle-orm/pg-core';
 
 export const userStatusEnum = pgEnum('user_status', ['ACTIVE', 'SUSPENDED']);
 
@@ -13,11 +13,15 @@ export const users = pgTable('users', {
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const sessions = pgTable('sessions', {
-    id: varchar('id', { length: 128 }).primaryKey(),
-    userId: uuid('user_id')
-        .notNull()
-        .references(() => users.id, { onDelete: 'cascade' }),
-    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+export const sessions = pgTable(
+    'sessions',
+    {
+        id: varchar('id', { length: 128 }).primaryKey(),
+        userId: uuid('user_id')
+            .notNull()
+            .references(() => users.id, { onDelete: 'cascade' }),
+        expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+        createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    },
+    (table) => [index('sessions_user_id_idx').on(table.userId)],
+);

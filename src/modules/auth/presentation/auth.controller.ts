@@ -5,12 +5,17 @@ import { registerSchema, loginSchema } from './schemas/auth.schemas.js';
 import { clearSessionCookie, getSessionIdFromRequest, setSessionCookie } from './utils/session-cookie.js';
 import { toPublicUser } from './utils/public-user.js';
 import { LogoutUserUseCase } from '../application/use-cases/logout-user.use-case.js';
+import { AppError } from '../../../shared/errors/app-error.js';
+import { LogoutAllUseCase } from '../application/use-cases/logout-all-use-case.js';
+import { GetCurrentUserUseCase } from '../application/use-cases/get-current-user.use-case.js';
 
 export class AuthController {
     constructor(
         private readonly registerUseCase: RegisterUserUseCase,
         private readonly loginUseCase: LoginUserUseCase,
         private readonly logoutUseCase: LogoutUserUseCase,
+        private readonly logoutAllUseCase: LogoutAllUseCase,
+        private readonly getCurrentUserUseCase: GetCurrentUserUseCase,
     ) { }
 
     register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -42,6 +47,32 @@ export class AuthController {
             }
             clearSessionCookie(res);
             res.status(204).send();
+        } catch (error) {
+            next(error);
+        }
+    };
+    logoutAll = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            if (!req.userId) {
+                throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
+            }
+            await this.logoutAllUseCase.execute(req.userId);
+            clearSessionCookie(res);
+            res.status(204).send();
+        } catch (error) {
+            next(error);
+        }
+    };
+    me = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            if (!req.userId) {
+                throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
+            }
+            const user = await this.getCurrentUserUseCase.execute(req.userId);
+            if (!user) {
+                throw new AppError(401, 'UNAUTHENTICATED', 'User not found.');
+            }
+            res.status(200).json({ user: toPublicUser(user) });
         } catch (error) {
             next(error);
         }

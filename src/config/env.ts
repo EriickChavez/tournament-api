@@ -1,12 +1,17 @@
-const requiredEnv = {
-    NODE_ENV: process.env.NODE_ENV ?? 'development',
-    PORT: Number(process.env.PORT ?? 3000),
-    DATABASE_URL: process.env.DATABASE_URL,
-    CORS_ORIGIN: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
-} as const;
+import { z } from 'zod';
 
-if (!requiredEnv.DATABASE_URL) {
-    throw new Error('DATABASE_URL is required');
+const envSchema = z.object({
+    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    PORT: z.coerce.number().int().positive().default(3000),
+    DATABASE_URL: z.string().url(),
+    CORS_ORIGIN: z.string().url().default('http://localhost:5173'),
+});
+
+const parsed = envSchema.safeParse(process.env);
+
+if (!parsed.success) {
+    console.error('Invalid environment variables:', parsed.error.flatten().fieldErrors);
+    throw new Error('Invalid environment variables');
 }
 
-export const env = requiredEnv;
+export const env = parsed.data;

@@ -4,6 +4,8 @@ import type { UserRepository } from '../../domain/repositories/user.repository.j
 import { AppError } from '../../../../shared/errors/app-error.js';
 
 const COOKIE_NAME = 'session_id';
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const RENEWAL_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000;
 
 declare global {
     // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -20,7 +22,7 @@ export function createRequireAuth(
 ) {
     return async function requireAuth(
         req: Request,
-        _res: Response,
+        res: Response,
         next: NextFunction,
     ): Promise<void> {
         try {
@@ -36,7 +38,8 @@ export function createRequireAuth(
                 throw new AppError(401, 'UNAUTHENTICATED', 'Invalid or expired session.');
             }
 
-            if (session.expiresAt.getTime() < Date.now()) {
+            const now = Date.now();
+            if (session.expiresAt.getTime() < now) {
                 await sessionRepository.delete(session.id);
                 throw new AppError(401, 'UNAUTHENTICATED', 'Session expired.');
             }
@@ -44,6 +47,17 @@ export function createRequireAuth(
             const user = await userRepository.findById(session.userId);
             if (!user || user.status === 'SUSPENDED') {
                 throw new AppError(401, 'UNAUTHENTICATED', 'Account not accessible.');
+            }
+
+            if (session.expiresAt.getTime() - now < RENEWAL_THRESHOLD_MS) {
+                const newExpiresAt = new Date(now + SESSION_TTL_MS);
+                await sessionRepository.updateExpiresAt(session.id, newExpiresAt);
+                res.cookie(COOKIE_NAME, session.id, {
+                    httpOnly: true,
+                    secure: req.secure,
+                    sameSite: 'lax',
+                    expires: newExpiresAt,
+                });
             }
 
             req.userId = user.id;
