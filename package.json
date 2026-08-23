@@ -13,6 +13,7 @@
     "format:check": "prettier --check .",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "seed:roles": "tsx src/scripts/seed-roles.ts",
     "test": "node --test"
   },
   "keywords": [],

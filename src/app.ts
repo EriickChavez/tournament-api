@@ -8,6 +8,7 @@ import { authRouter } from './modules/auth/auth.module.js';
 import { healthRouter } from './shared/health/health.route.js';
 import { env } from './config/env.js';
 import { logger } from './shared/logging/logger.js';
+import { tournamentRouter } from './modules/tournaments/tournaments.module.js';
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use(cookieParser());
 
 app.use(healthRouter);
 app.use('/auth', authRouter);
+app.use('/tournaments', tournamentRouter);
 
 app.use(errorHandler);
 

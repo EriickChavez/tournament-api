@@ -5,6 +5,8 @@ const envSchema = z.object({
     PORT: z.coerce.number().int().positive().default(3000),
     DATABASE_URL: z.string().url(),
     CORS_ORIGIN: z.string().url().default('http://localhost:5173'),
+    OWNER_ROLE_ID: z.string().uuid(),
+    ADMIN_ROLE_ID: z.string().uuid(),
 });
 
 const parsed = envSchema.safeParse(process.env);
