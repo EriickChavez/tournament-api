@@ -1,12 +1,10 @@
-export type UserStatus = 'ACTIVE' | 'SUSPENDED';
-
 export interface User {
     id: string;
     email: string;
     passwordHash: string;
-    name: string;
-    status: UserStatus;
-    emailVerifiedAt: Date | null;
+    displayName: string;
+    avatarUrl: string | null;
+    isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
 }

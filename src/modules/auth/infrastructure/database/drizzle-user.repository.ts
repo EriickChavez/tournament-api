@@ -15,7 +15,12 @@ export class DrizzleUserRepository implements UserRepository {
         return row ?? null;
     }
 
-    async create(input: { email: string; passwordHash: string; name: string }): Promise<User> {
+    async create(input: {
+        email: string;
+        passwordHash: string;
+        displayName: string;
+        avatarUrl: string | null;
+    }): Promise<User> {
         const [row] = await db.insert(users).values(input).returning();
         if (!row) throw new Error('Failed to create user');
         return row;

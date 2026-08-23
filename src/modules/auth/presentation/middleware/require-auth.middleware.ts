@@ -45,7 +45,7 @@ export function createRequireAuth(
             }
 
             const user = await userRepository.findById(session.userId);
-            if (!user || user.status === 'SUSPENDED') {
+            if (!user || !user.isActive) {
                 throw new AppError(401, 'UNAUTHENTICATED', 'Account not accessible.');
             }
 

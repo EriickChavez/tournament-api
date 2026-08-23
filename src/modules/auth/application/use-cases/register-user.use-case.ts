@@ -5,7 +5,7 @@ import { EmailAlreadyInUseError } from '../../domain/errors/auth.errors.js';
 import type { User } from '../../domain/entities/user.entity.js';
 import type { Session } from '../../domain/entities/session.entity.js';
 
-const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 días
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 export class RegisterUserUseCase {
     constructor(
@@ -17,7 +17,8 @@ export class RegisterUserUseCase {
     async execute(input: {
         email: string;
         password: string;
-        name: string;
+        displayName: string;
+        avatarUrl?: string | undefined;
     }): Promise<{ user: User; session: Session }> {
         const existing = await this.userRepository.findByEmail(input.email);
         if (existing) throw new EmailAlreadyInUseError(input.email);
@@ -26,7 +27,8 @@ export class RegisterUserUseCase {
         const user = await this.userRepository.create({
             email: input.email,
             passwordHash,
-            name: input.name,
+            displayName: input.displayName,
+            avatarUrl: input.avatarUrl ?? null,
         });
 
         const session = await this.sessionRepository.create({

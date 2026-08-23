@@ -32,7 +32,7 @@ export class LoginUserUseCase {
             throw new InvalidCredentialsError();
         }
 
-        if (user.status === 'SUSPENDED') throw new AccountSuspendedError();
+        if (!user.isActive) throw new AccountSuspendedError();
 
         const session = await this.sessionRepository.create({
             userId: user.id,

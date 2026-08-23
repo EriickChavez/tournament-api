@@ -1,4 +1,3 @@
-CREATE TYPE "public"."user_status" AS ENUM('ACTIVE', 'SUSPENDED');--> statement-breakpoint
 CREATE TABLE "sessions" (
 	"id" varchar(128) PRIMARY KEY NOT NULL,
 	"user_id" uuid NOT NULL,
@@ -10,9 +9,9 @@ CREATE TABLE "users" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"email" varchar(255) NOT NULL,
 	"password_hash" varchar(255) NOT NULL,
-	"name" varchar(255) NOT NULL,
-	"status" "user_status" DEFAULT 'ACTIVE' NOT NULL,
-	"email_verified_at" timestamp with time zone,
+	"display_name" varchar(120) NOT NULL,
+	"avatar_url" varchar(500),
+	"is_active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "users_email_unique" UNIQUE("email")
