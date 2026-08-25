@@ -8,5 +8,7 @@ export function createTournamentRouter(
 ): Router {
     const router = Router();
     router.post('/', requireAuth, controller.create);
+    router.get('/', requireAuth, controller.listMine);
+    router.patch('/:id', requireAuth, controller.update);
     return router;
 }

@@ -9,3 +9,10 @@ export function toPublicTournament(tournament: Tournament) {
         slug: tournament.slug,
     };
 }
+
+export function toPublicTournamentWithRole(tournament: Tournament & { roleId: string }) {
+    return {
+        ...toPublicTournament(tournament),
+        roleId: tournament.roleId,
+    };
+}

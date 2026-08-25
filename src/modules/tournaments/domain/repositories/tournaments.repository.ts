@@ -1,7 +1,9 @@
-import { Tournament } from "../entities/tournaments.entity";
+import type { Tournament } from '../entities/tournaments.entity';
 
 export interface TournamentRepository {
+    findById(id: string): Promise<Tournament | null>;
     findBySlug(slug: string): Promise<Tournament | null>;
+    findAllForUser(userId: string): Promise<Array<Tournament & { roleId: string }>>;
     create(input: {
         name: string;
         subtitle: string | null;
@@ -9,4 +11,14 @@ export interface TournamentRepository {
         slug: string;
         createdByUserId: string;
     }): Promise<Tournament>;
+    update(
+        id: string,
+        input: {
+            name?: string | undefined;
+            subtitle?: string | null | undefined;
+            description?: string | null | undefined;
+            slug?: string | undefined;
+            updatedByUserId: string;
+        },
+    ): Promise<Tournament>;
 }

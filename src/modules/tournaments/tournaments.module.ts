@@ -2,6 +2,8 @@ import { DrizzleTournamentRepository } from './infrastructure/database/drizzle-t
 import { DrizzleTournamentMemberRepository } from './infrastructure/database/drizzle-tournament-member.repository.js';
 import { SlugifyGenerator } from './infrastructure/slug/slugify-generator.js';
 import { CreateTournamentUseCase } from './application/use-cases/create-tournament.use-case.js';
+import { ListUserTournamentsUseCase } from './application/use-cases/list-user-tournaments.use-case.js';
+import { UpdateTournamentUseCase } from './application/use-cases/update-tournament.use-case.js';
 import { TournamentController } from './presentation/tournament.controller.js';
 import { createTournamentRouter } from './presentation/tournament.routes.js';
 import { requireAuth } from '../auth/auth.module.js';
@@ -15,6 +17,17 @@ const createTournamentUseCase = new CreateTournamentUseCase(
     tournamentMemberRepository,
     slugGenerator,
 );
-const tournamentController = new TournamentController(createTournamentUseCase);
+const listUserTournamentsUseCase = new ListUserTournamentsUseCase(tournamentRepository);
+const updateTournamentUseCase = new UpdateTournamentUseCase(
+    tournamentRepository,
+    tournamentMemberRepository,
+    slugGenerator,
+);
+
+const tournamentController = new TournamentController(
+    createTournamentUseCase,
+    listUserTournamentsUseCase,
+    updateTournamentUseCase,
+);
 
 export const tournamentRouter = createTournamentRouter(tournamentController, requireAuth);
