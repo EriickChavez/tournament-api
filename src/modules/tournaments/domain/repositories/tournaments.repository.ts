@@ -21,4 +21,5 @@ export interface TournamentRepository {
             updatedByUserId: string;
         },
     ): Promise<Tournament>;
+    delete(id: string, userId: string): Promise<void>;
 }

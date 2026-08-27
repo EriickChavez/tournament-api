@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import type { CreateTournamentUseCase } from '../application/use-cases/create-tournament.use-case.js';
 import type { ListUserTournamentsUseCase } from '../application/use-cases/list-user-tournaments.use-case.js';
 import type { UpdateTournamentUseCase } from '../application/use-cases/update-tournament.use-case.js';
+import type { DeleteTournamentUseCase } from '../application/use-cases/delete-tournament.use-case.js';
 import { createTournamentSchema, updateTournamentSchema } from './schemas/tournament.schemas.js';
 import { toPublicTournament, toPublicTournamentWithRole } from './utils/public-tournament.js';
 import { AppError } from '../../../shared/errors/app-error.js';
@@ -11,6 +12,7 @@ export class TournamentController {
         private readonly createTournamentUseCase: CreateTournamentUseCase,
         private readonly listUserTournamentsUseCase: ListUserTournamentsUseCase,
         private readonly updateTournamentUseCase: UpdateTournamentUseCase,
+        private readonly deleteTournamentUseCase: DeleteTournamentUseCase,
     ) { }
 
     create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -50,6 +52,21 @@ export class TournamentController {
                 ...input,
             });
             res.status(200).json({ tournament: toPublicTournament(tournament) });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    delete = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            if (!req.userId) {
+                throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
+            }
+            await this.deleteTournamentUseCase.execute({
+                tournamentId: req.params.id as string,
+                userId: req.userId,
+            });
+            res.status(200).json({ message: 'Tournament deleted successfully' });
         } catch (error) {
             next(error);
         }

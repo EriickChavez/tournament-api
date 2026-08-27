@@ -7,6 +7,7 @@ import { UpdateTournamentUseCase } from './application/use-cases/update-tourname
 import { TournamentController } from './presentation/tournament.controller.js';
 import { createTournamentRouter } from './presentation/tournament.routes.js';
 import { requireAuth } from '../auth/auth.module.js';
+import { DeleteTournamentUseCase } from './application/use-cases/delete-tournament.use-case.js';
 
 const tournamentRepository = new DrizzleTournamentRepository();
 const tournamentMemberRepository = new DrizzleTournamentMemberRepository();
@@ -18,6 +19,10 @@ const createTournamentUseCase = new CreateTournamentUseCase(
     slugGenerator,
 );
 const listUserTournamentsUseCase = new ListUserTournamentsUseCase(tournamentRepository);
+const deleteUserTournamentsUseCase = new DeleteTournamentUseCase(
+    tournamentRepository,
+    tournamentMemberRepository,
+);
 const updateTournamentUseCase = new UpdateTournamentUseCase(
     tournamentRepository,
     tournamentMemberRepository,
@@ -28,6 +33,7 @@ const tournamentController = new TournamentController(
     createTournamentUseCase,
     listUserTournamentsUseCase,
     updateTournamentUseCase,
+    deleteUserTournamentsUseCase,
 );
 
 export const tournamentRouter = createTournamentRouter(tournamentController, requireAuth);

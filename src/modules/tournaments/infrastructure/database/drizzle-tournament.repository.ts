@@ -69,4 +69,12 @@ export class DrizzleTournamentRepository implements TournamentRepository {
         if (!row) throw new Error('Failed to update tournament');
         return row;
     }
+
+    async delete(id: string): Promise<void> {
+        await db.transaction(async (tx) => {
+            await tx.delete(tournamentMembers).where(eq(tournamentMembers.tournamentId, id));
+            const [row] = await tx.delete(tournaments).where(eq(tournaments.id, id)).returning();
+            if (!row) throw new Error('Failed to delete tournament');
+        });
+    }
 }

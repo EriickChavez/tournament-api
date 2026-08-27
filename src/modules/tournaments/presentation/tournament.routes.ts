@@ -10,5 +10,6 @@ export function createTournamentRouter(
     router.post('/', requireAuth, controller.create);
     router.get('/', requireAuth, controller.listMine);
     router.patch('/:id', requireAuth, controller.update);
+    router.delete('/:id', requireAuth, controller.delete);
     return router;
 }
