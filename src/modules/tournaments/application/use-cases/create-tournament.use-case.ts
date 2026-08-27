@@ -16,6 +16,9 @@ export class CreateTournamentUseCase {
         name: string;
         subtitle?: string | undefined;
         description?: string | undefined;
+        startDate?: string | null | undefined;
+        endDate?: string | null | undefined;
+        timezone?: string | undefined;
         userId: string;
     }): Promise<Tournament> {
         const slug = this.slugGenerator.generate(input.name);
@@ -28,6 +31,9 @@ export class CreateTournamentUseCase {
             subtitle: input.subtitle ?? null,
             description: input.description ?? null,
             slug,
+            startDate: input.startDate ?? null,
+            endDate: input.endDate ?? null,
+            timezone: input.timezone,
             createdByUserId: input.userId,
         });
 

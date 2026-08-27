@@ -15,7 +15,6 @@ export class DeleteTournamentUseCase {
     }): Promise<void> {
         const tournament = await this.tournamentRepository.findById(input.tournamentId);
         if (!tournament) throw new TournamentNotFoundError();
-        console.log('TORNEOS')
         const member = await this.tournamentMemberRepository.findByTournamentAndUser(
             input.tournamentId,
             input.userId,

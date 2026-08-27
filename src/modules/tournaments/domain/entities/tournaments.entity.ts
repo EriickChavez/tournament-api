@@ -6,6 +6,7 @@ export interface Tournament {
     slug: string;
     startDate: string | null;
     endDate: string | null;
+    timezone: string;
     createdByUserId: string | null;
     createdAt: Date;
     updatedByUserId: string | null;

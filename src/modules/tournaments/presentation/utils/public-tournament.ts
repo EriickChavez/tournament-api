@@ -7,6 +7,9 @@ export function toPublicTournament(tournament: Tournament) {
         subtitle: tournament.subtitle,
         description: tournament.description,
         slug: tournament.slug,
+        startDate: tournament.startDate,
+        endDate: tournament.endDate,
+        timezone: tournament.timezone,
     };
 }
 

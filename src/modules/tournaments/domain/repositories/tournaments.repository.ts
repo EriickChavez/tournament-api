@@ -9,6 +9,9 @@ export interface TournamentRepository {
         subtitle: string | null;
         description: string | null;
         slug: string;
+        startDate?: string | null | undefined;
+        endDate?: string | null | undefined;
+        timezone?: string | undefined;
         createdByUserId: string;
     }): Promise<Tournament>;
     update(
@@ -18,6 +21,9 @@ export interface TournamentRepository {
             subtitle?: string | null | undefined;
             description?: string | null | undefined;
             slug?: string | undefined;
+            startDate?: string | null | undefined;
+            endDate?: string | null | undefined;
+            timezone?: string | undefined;
             updatedByUserId: string;
         },
     ): Promise<Tournament>;

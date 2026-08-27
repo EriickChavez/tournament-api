@@ -9,6 +9,7 @@ export const tournaments = pgTable('torneos', {
     slug: varchar('slug', { length: 220 }).notNull().unique(),
     startDate: date('fecha_inicio'),
     endDate: date('fecha_fin'),
+    timezone: varchar('zona_horaria', { length: 60 }).notNull().default('America/Mexico_City'),
     createdByUserId: uuid('created_by_user_id').references(() => users.id),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedByUserId: uuid('updated_by_user_id').references(() => users.id),

@@ -26,6 +26,7 @@ export class DrizzleTournamentRepository implements TournamentRepository {
                 slug: tournaments.slug,
                 startDate: tournaments.startDate,
                 endDate: tournaments.endDate,
+                timezone: tournaments.timezone,
                 createdByUserId: tournaments.createdByUserId,
                 createdAt: tournaments.createdAt,
                 updatedByUserId: tournaments.updatedByUserId,
@@ -44,6 +45,9 @@ export class DrizzleTournamentRepository implements TournamentRepository {
         subtitle: string | null;
         description: string | null;
         slug: string;
+        startDate?: string | null | undefined;
+        endDate?: string | null | undefined;
+        timezone?: string | undefined;
         createdByUserId: string;
     }): Promise<Tournament> {
         const [row] = await db.insert(tournaments).values(input).returning();
@@ -58,6 +62,9 @@ export class DrizzleTournamentRepository implements TournamentRepository {
             subtitle?: string | null | undefined;
             description?: string | null | undefined;
             slug?: string | undefined;
+            startDate?: string | null | undefined;
+            endDate?: string | null | undefined;
+            timezone?: string | undefined;
             updatedByUserId: string;
         },
     ): Promise<Tournament> {

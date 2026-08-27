@@ -18,6 +18,9 @@ export class UpdateTournamentUseCase {
         name?: string | undefined;
         subtitle?: string | undefined;
         description?: string | undefined;
+        startDate?: string | null | undefined;
+        endDate?: string | null | undefined;
+        timezone?: string | undefined;
     }): Promise<Tournament> {
         const tournament = await this.tournamentRepository.findById(input.tournamentId);
         if (!tournament) throw new TournamentNotFoundError();
@@ -38,12 +41,16 @@ export class UpdateTournamentUseCase {
                 throw new SlugAlreadyInUseError(slug);
             }
         }
+        console.log({ input })
 
         return this.tournamentRepository.update(input.tournamentId, {
             name: input.name,
             subtitle: input.subtitle,
             description: input.description,
             slug,
+            startDate: input.startDate,
+            endDate: input.endDate,
+            timezone: input.timezone,
             updatedByUserId: input.userId,
         });
     }
