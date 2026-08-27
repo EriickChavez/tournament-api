@@ -13,6 +13,7 @@ import {
     categoryRouter,
     tournamentCategoryRouter,
 } from './modules/categories/categories.module.js';
+import { teamRouter, tournamentTeamRouter } from './modules/teams/teams.module.js';
 
 const app = express();
 
@@ -32,6 +33,8 @@ app.use('/auth', authRouter);
 app.use('/tournaments', tournamentRouter);
 app.use('/tournaments/:tournamentId/categories', tournamentCategoryRouter);
 app.use('/categories', categoryRouter);
+app.use('/tournaments/:tournamentId/teams', tournamentTeamRouter);
+app.use('/teams', teamRouter);
 
 app.use(errorHandler);
 
