@@ -22,6 +22,13 @@
       "when": 1787855510899,
       "tag": "0002_wandering_grim_reaper",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1787858187973,
+      "tag": "0003_legal_magik",
+      "breakpoints": true
     }
   ]
 }
