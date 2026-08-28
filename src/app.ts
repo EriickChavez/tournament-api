@@ -14,6 +14,7 @@ import {
     tournamentCategoryRouter,
 } from './modules/categories/categories.module.js';
 import { teamRouter, tournamentTeamRouter } from './modules/teams/teams.module.js';
+import { playerRouter, tournamentPlayerRouter } from './modules/players/players.module.js';
 
 const app = express();
 
@@ -35,6 +36,8 @@ app.use('/tournaments/:tournamentId/categories', tournamentCategoryRouter);
 app.use('/categories', categoryRouter);
 app.use('/tournaments/:tournamentId/teams', tournamentTeamRouter);
 app.use('/teams', teamRouter);
+app.use('/tournaments/:tournamentId/players', tournamentPlayerRouter);
+app.use('/players', playerRouter);
 
 app.use(errorHandler);
 
