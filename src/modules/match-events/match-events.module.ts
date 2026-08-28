@@ -8,6 +8,7 @@ import { ListMatchEventsUseCase } from './application/use-cases/list-match-event
 import { MatchEventController } from './presentation/match-event.controller.js';
 import { createMatchEventRouter, createStandaloneMatchEventRouter } from './presentation/match-event.routes.js';
 import { requireAuth } from '../auth/auth.module.js';
+import { recalculateMatchStatsService } from '../standings/standings.module.js';
 
 const matchEventRepository = new DrizzleMatchEventRepository();
 const matchRepository = new DrizzleMatchRepository();
@@ -19,8 +20,13 @@ const createMatchEventUseCase = new CreateMatchEventUseCase(
     matchRepository,
     tournamentMemberRepository,
     playerRepository,
+    recalculateMatchStatsService,
 );
-const deleteMatchEventUseCase = new DeleteMatchEventUseCase(matchEventRepository, tournamentMemberRepository);
+const deleteMatchEventUseCase = new DeleteMatchEventUseCase(
+    matchEventRepository,
+    tournamentMemberRepository,
+    recalculateMatchStatsService,
+);
 const listMatchEventsUseCase = new ListMatchEventsUseCase(matchEventRepository, matchRepository);
 
 const matchEventController = new MatchEventController(

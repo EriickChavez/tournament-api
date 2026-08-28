@@ -12,6 +12,11 @@ import {
     InvalidAssistForMatchEventError,
 } from '../../domain/errors/match-event.errors.js';
 
+/** Puerto mínimo para no acoplar el use case a la clase concreta de standings. */
+export interface MatchStatsRecalculator {
+    recalculateForMatch(matchId: string): Promise<void>;
+}
+
 function isOwnerOrAdmin(roleId: string): boolean {
     return roleId === env.OWNER_ROLE_ID || roleId === env.ADMIN_ROLE_ID;
 }
@@ -22,6 +27,7 @@ export class CreateMatchEventUseCase {
         private readonly matchRepository: MatchRepository,
         private readonly tournamentMemberRepository: TournamentMemberRepository,
         private readonly playerRepository: PlayerRepository,
+        private readonly matchStatsRecalculator: MatchStatsRecalculator,
     ) { }
 
     async execute(input: {
@@ -66,7 +72,7 @@ export class CreateMatchEventUseCase {
             }
         }
 
-        return this.matchEventRepository.create({
+        const created = await this.matchEventRepository.create({
             tournamentId: match.tournamentId,
             categoryId: match.categoryId,
             matchId: input.matchId,
@@ -78,5 +84,10 @@ export class CreateMatchEventUseCase {
             description: input.description,
             createdByUserId: input.userId,
         });
+
+        // El servicio solo cuenta partidos finished; si aún no lo está, no cambia nada.
+        await this.matchStatsRecalculator.recalculateForMatch(input.matchId);
+
+        return created;
     }
 }

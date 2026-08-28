@@ -12,6 +12,11 @@ import {
     SameTeamMatchError,
 } from '../../domain/errors/match.errors.js';
 
+/** Puerto mínimo (mismo shape que en match-events). */
+export interface MatchStatsRecalculator {
+    recalculateForMatch(matchId: string): Promise<void>;
+}
+
 function isOwnerOrAdmin(roleId: string): boolean {
     return roleId === env.OWNER_ROLE_ID || roleId === env.ADMIN_ROLE_ID;
 }
@@ -22,6 +27,7 @@ export class UpdateMatchUseCase {
         private readonly tournamentMemberRepository: TournamentMemberRepository,
         private readonly categoryRepository: CategoryRepository,
         private readonly teamRepository: TeamRepository,
+        private readonly matchStatsRecalculator: MatchStatsRecalculator,
     ) { }
 
     async execute(input: {
@@ -58,6 +64,7 @@ export class UpdateMatchUseCase {
             if (!category || category.tournamentId !== match.tournamentId) {
                 throw new InvalidCategoryForMatchError();
             }
+
         }
 
         if (input.categoryId || input.homeTeamId || input.awayTeamId) {
@@ -78,7 +85,9 @@ export class UpdateMatchUseCase {
             }
         }
 
-        return this.matchRepository.update(input.matchId, {
+        const previousStatus = match.status;
+
+        const updated = await this.matchRepository.update(input.matchId, {
             categoryId: input.categoryId,
             homeTeamId: input.homeTeamId,
             awayTeamId: input.awayTeamId,
@@ -87,5 +96,23 @@ export class UpdateMatchUseCase {
             status: input.status,
             updatedByUserId: input.userId,
         });
+
+        // Recalcular si entra/sale de finished, o si un partido finished cambia de equipos/categoría.
+        const becameOrLeftFinished =
+            input.status !== undefined &&
+            input.status !== previousStatus &&
+            (input.status === 'finished' || previousStatus === 'finished');
+
+        const structuralChangeOnFinished =
+            previousStatus === 'finished' &&
+            (input.categoryId !== undefined ||
+                input.homeTeamId !== undefined ||
+                input.awayTeamId !== undefined);
+
+        if (becameOrLeftFinished || structuralChangeOnFinished || updated.status === 'finished') {
+            await this.matchStatsRecalculator.recalculateForMatch(input.matchId);
+        }
+
+        return updated;
     }
 }

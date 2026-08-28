@@ -4,6 +4,10 @@ import type { TeamStandingRepository } from '../../domain/repositories/team-stan
 import type { TopScorerRepository } from '../../domain/repositories/top-scorer.repository.js';
 import type { CardCountRepository } from '../../domain/repositories/card-count.repository.js';
 
+/**
+ * Recalcula materializaciones (posiciones, goleadores, tarjetas) a partir de
+ * partidos finished + eventos. Fuente de verdad = eventos_partido / partidos.
+ */
 export class RecalculateMatchStatsService {
     constructor(
         private readonly matchRepository: MatchRepository,
@@ -13,26 +17,17 @@ export class RecalculateMatchStatsService {
         private readonly cardCountRepository: CardCountRepository,
     ) { }
 
+    /**
+     * Recalcula standings de ambos equipos del partido y rankings de la categoría.
+     * Se puede llamar aunque el partido no esté finished: los métodos internos
+     * solo cuentan partidos finished, así que un-finish también corrige números.
+     */
     async recalculateForMatch(matchId: string): Promise<void> {
         const match = await this.matchRepository.findById(matchId);
-        if (!match || match.status !== 'finished') {
-            // Si el partido no está terminado, no cuenta para estadísticas.
-            // (Si en algún momento estuvo finished y contó, y ahora deja de estarlo,
-            // sería necesario "restar" — no cubierto aquí porque no hay caso de uso
-            // hoy que revierta un status de finished a otro estado).
-            return;
-        }
-
-        const events = await this.matchEventRepository.findByMatchId(matchId);
-
-        const homeGoals = events.filter((e) => e.eventType === 'gol' && e.teamId === match.homeTeamId).length;
-        const awayGoals = events.filter((e) => e.eventType === 'gol' && e.teamId === match.awayTeamId).length;
+        if (!match) return;
 
         await this.recalculateTeamStanding(match.tournamentId, match.categoryId, match.homeTeamId);
         await this.recalculateTeamStanding(match.tournamentId, match.categoryId, match.awayTeamId);
-        void homeGoals;
-        void awayGoals;
-
         await this.recalculateTopScorersAndCards(match.tournamentId, match.categoryId);
     }
 
@@ -120,11 +115,20 @@ export class RecalculateMatchStatsService {
             }
         }
 
-        const allPlayerIds = new Set([
+        // Incluir jugadores que ya tenían fila materializada para poder ponerlos en 0
+        // si se borraron todos sus eventos.
+        const [existingScorers, existingCards] = await Promise.all([
+            this.topScorerRepository.findByTournamentAndCategory(tournamentId, categoryId),
+            this.cardCountRepository.findByTournamentAndCategory(tournamentId, categoryId),
+        ]);
+
+        const allPlayerIds = new Set<string>([
             ...goalsByPlayer.keys(),
             ...assistsByPlayer.keys(),
             ...yellowsByPlayer.keys(),
             ...redsByPlayer.keys(),
+            ...existingScorers.map((s) => s.playerId),
+            ...existingCards.map((c) => c.playerId),
         ]);
 
         for (const playerId of allPlayerIds) {

@@ -10,6 +10,7 @@ import { ListMatchesUseCase } from './application/use-cases/list-matches.use-cas
 import { MatchController } from './presentation/match.controller.js';
 import { createMatchRouter, createTournamentMatchRouter } from './presentation/match.routes.js';
 import { requireAuth } from '../auth/auth.module.js';
+import { recalculateMatchStatsService } from '../standings/standings.module.js';
 
 const matchRepository = new DrizzleMatchRepository();
 const tournamentRepository = new DrizzleTournamentRepository();
@@ -29,6 +30,7 @@ const updateMatchUseCase = new UpdateMatchUseCase(
     tournamentMemberRepository,
     categoryRepository,
     teamRepository,
+    recalculateMatchStatsService,
 );
 const deleteMatchUseCase = new DeleteMatchUseCase(matchRepository, tournamentMemberRepository);
 const listMatchesUseCase = new ListMatchesUseCase(matchRepository, tournamentRepository);

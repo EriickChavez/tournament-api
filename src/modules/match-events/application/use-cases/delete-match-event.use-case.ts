@@ -3,6 +3,7 @@ import type { MatchEventRepository } from '../../domain/repositories/match-event
 import type { TournamentMemberRepository } from '../../../tournaments/domain/repositories/tournaments-member.repository.js';
 import { NotTournamentOwnerOrAdminError } from '../../../tournaments/domain/errors/tournaments.errors.js';
 import { MatchEventNotFoundError } from '../../domain/errors/match-event.errors.js';
+import type { MatchStatsRecalculator } from './create-match-event.use-case.js';
 
 function isOwnerOrAdmin(roleId: string): boolean {
     return roleId === env.OWNER_ROLE_ID || roleId === env.ADMIN_ROLE_ID;
@@ -12,6 +13,7 @@ export class DeleteMatchEventUseCase {
     constructor(
         private readonly matchEventRepository: MatchEventRepository,
         private readonly tournamentMemberRepository: TournamentMemberRepository,
+        private readonly matchStatsRecalculator: MatchStatsRecalculator,
     ) { }
 
     async execute(input: { matchEventId: string; userId: string }): Promise<void> {
@@ -26,6 +28,9 @@ export class DeleteMatchEventUseCase {
             throw new NotTournamentOwnerOrAdminError();
         }
 
+        const matchId = event.matchId;
         await this.matchEventRepository.delete(input.matchEventId);
+
+        await this.matchStatsRecalculator.recalculateForMatch(matchId);
     }
 }
