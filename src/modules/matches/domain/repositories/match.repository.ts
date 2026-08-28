@@ -1,0 +1,35 @@
+import type { Match, MatchStatus } from '../entities/match.entity.js';
+
+export interface MatchRepository {
+    findById(id: string): Promise<Match | null>;
+    findByTournamentId(
+        tournamentId: string,
+        filters?: {
+            categoryId?: string | undefined;
+            status?: MatchStatus | undefined;
+        },
+    ): Promise<Match[]>;
+    create(input: {
+        tournamentId: string;
+        categoryId: string;
+        homeTeamId: string;
+        awayTeamId: string;
+        scheduledAt: Date;
+        venue?: string | null | undefined;
+        status?: MatchStatus | undefined;
+        createdByUserId: string;
+    }): Promise<Match>;
+    update(
+        id: string,
+        input: {
+            categoryId?: string | undefined;
+            homeTeamId?: string | undefined;
+            awayTeamId?: string | undefined;
+            scheduledAt?: Date | undefined;
+            venue?: string | null | undefined;
+            status?: MatchStatus | undefined;
+            updatedByUserId: string;
+        },
+    ): Promise<Match>;
+    delete(id: string): Promise<void>;
+}

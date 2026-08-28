@@ -17,3 +17,13 @@ export class NotTournamentOwnerError extends AppError {
         super(403, 'NOT_TOURNAMENT_OWNER', 'Only the tournament owner can perform this action.');
     }
 }
+
+export class NotTournamentOwnerOrAdminError extends AppError {
+    constructor() {
+        super(
+            403,
+            'NOT_TOURNAMENT_OWNER_OR_ADMIN',
+            'Only the tournament owner or admin can perform this action.',
+        );
+    }
+}

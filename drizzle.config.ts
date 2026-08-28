@@ -9,6 +9,7 @@ export default defineConfig({
         './src/modules/categories/infrastructure/database/schema.ts',
         './src/modules/teams/infrastructure/database/schema.ts',
         './src/modules/players/infrastructure/database/schema.ts',
+        './src/modules/matches/infrastructure/database/schema.ts',
     ],
     out: './drizzle',
     dialect: 'postgresql',
