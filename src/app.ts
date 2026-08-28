@@ -16,6 +16,7 @@ import {
 import { teamRouter, tournamentTeamRouter } from './modules/teams/teams.module.js';
 import { playerRouter, tournamentPlayerRouter } from './modules/players/players.module.js';
 import { matchRouter, tournamentMatchRouter } from './modules/matches/matches.module.js';
+import { matchEventRouter, standaloneMatchEventRouter } from './modules/match-events/match-events.module.js';
 
 const app = express();
 
@@ -41,6 +42,8 @@ app.use('/tournaments/:tournamentId/players', tournamentPlayerRouter);
 app.use('/players', playerRouter);
 app.use('/tournaments/:tournamentId/matches', tournamentMatchRouter);
 app.use('/matches', matchRouter);
+app.use('/matches/:matchId/events', matchEventRouter);
+app.use('/match-events', standaloneMatchEventRouter);
 
 app.use(errorHandler);
 
