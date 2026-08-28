@@ -1,9 +1,11 @@
+import { PaginationParams } from '../../../../shared/utils/pagination.js';
 import type { Player } from '../entities/player.entity.js';
+import type { Paginated } from '../../../../shared/utils/pagination.js';
 
 export interface PlayerRepository {
     findById(id: string): Promise<Player | null>;
     findByTournamentAndNumber(tournamentId: string, number: number): Promise<Player | null>;
-    findByTournamentId(tournamentId: string): Promise<Player[]>;
+    findByTournamentId(tournamentId: string, pagination: PaginationParams): Promise<Paginated<Player>>;
     create(input: {
         tournamentId: string;
         categoryId: string;

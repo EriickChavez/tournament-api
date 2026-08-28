@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { paginationQuerySchema } from '../../../../shared/utils/pagination';
 
 export const matchStatusSchema = z.enum([
     'scheduled',
@@ -26,7 +27,9 @@ export const updateMatchSchema = z.object({
     status: matchStatusSchema.optional(),
 });
 
-export const listMatchesQuerySchema = z.object({
-    categoryId: z.string().uuid().optional(),
-    status: matchStatusSchema.optional(),
-});
+export const listMatchesQuerySchema = z
+    .object({
+        categoryId: z.string().uuid().optional(),
+        status: matchStatusSchema.optional(),
+    })
+    .merge(paginationQuerySchema);

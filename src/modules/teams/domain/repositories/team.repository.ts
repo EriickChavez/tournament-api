@@ -1,9 +1,10 @@
 import type { Team } from '../entities/team.entity.js';
+import type { PaginationParams, Paginated } from '../../../../shared/utils/pagination.js';
 
 export interface TeamRepository {
     findById(id: string): Promise<Team | null>;
     findByTournamentAndName(tournamentId: string, name: string): Promise<Team | null>;
-    findByTournamentId(tournamentId: string): Promise<Team[]>;
+    findByTournamentId(tournamentId: string, pagination: PaginationParams): Promise<Paginated<Team>>;
     create(input: {
         tournamentId: string;
         categoryId: string;

@@ -10,6 +10,7 @@ import {
 } from './schemas/match.schemas.js';
 import { toPublicMatch } from './utils/public-match.js';
 import { AppError } from '../../../shared/errors/app-error.js';
+import { buildPaginationMeta } from '../../../shared/utils/pagination.js';
 
 export class MatchController {
     constructor(
@@ -24,8 +25,16 @@ export class MatchController {
             if (!req.userId) throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
             const tournamentId = req.params.tournamentId as string;
             const query = listMatchesQuerySchema.parse(req.query);
-            const matchesList = await this.listMatchesUseCase.execute(tournamentId, query);
-            res.status(200).json({ matches: matchesList.map(toPublicMatch) });
+            const { page, limit, ...filters } = query;
+            const { items, total } = await this.listMatchesUseCase.execute(
+                tournamentId,
+                { page, limit },
+                filters,
+            );
+            res.status(200).json({
+                matches: items.map(toPublicMatch),
+                pagination: buildPaginationMeta({ page, limit }, total),
+            });
         } catch (error) {
             next(error);
         }

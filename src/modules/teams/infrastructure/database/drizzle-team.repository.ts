@@ -1,8 +1,9 @@
-import { and, eq } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import { db } from '../../../../config/database.js';
 import { teams } from './schema.js';
 import type { TeamRepository } from '../../domain/repositories/team.repository.js';
 import type { Team } from '../../domain/entities/team.entity.js';
+import { Paginated, PaginationParams, toOffset } from '../../../../shared/utils/pagination.js';
 
 export class DrizzleTeamRepository implements TeamRepository {
     async findById(id: string): Promise<Team | null> {
@@ -19,10 +20,28 @@ export class DrizzleTeamRepository implements TeamRepository {
         return row ?? null;
     }
 
-    async findByTournamentId(tournamentId: string): Promise<Team[]> {
-        return db.select().from(teams).where(eq(teams.tournamentId, tournamentId));
-    }
+    async findByTournamentId(
+        tournamentId: string,
+        pagination: PaginationParams,
+    ): Promise<Paginated<Team>> {
+        const condition = eq(teams.tournamentId, tournamentId);
 
+        const [items, countRows] = await Promise.all([
+            db
+                .select()
+                .from(teams)
+                .where(condition)
+                .orderBy(asc(teams.name))
+                .limit(pagination.limit)
+                .offset(toOffset(pagination)),
+            db
+                .select({ count: sql<number>`count(*)::int` })
+                .from(teams)
+                .where(condition),
+        ]);
+
+        return { items, total: countRows[0]?.count ?? 0 };
+    }
     async create(input: {
         tournamentId: string;
         categoryId: string;

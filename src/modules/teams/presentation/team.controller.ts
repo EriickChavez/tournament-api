@@ -6,6 +6,8 @@ import type { ListTeamsUseCase } from '../application/use-cases/list-teams.use-c
 import { createTeamSchema, updateTeamSchema } from './schemas/team.schemas.js';
 import { toPublicTeam } from './utils/public-team.js';
 import { AppError } from '../../../shared/errors/app-error.js';
+import { paginationQuerySchema, buildPaginationMeta } from '../../../shared/utils/pagination.js';
+
 
 export class TeamController {
     constructor(
@@ -19,8 +21,12 @@ export class TeamController {
         try {
             if (!req.userId) throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
             const tournamentId = req.params.tournamentId as string;
-            const teams = await this.listTeamsUseCase.execute(tournamentId);
-            res.status(200).json({ teams: teams.map(toPublicTeam) });
+            const pagination = paginationQuerySchema.parse(req.query);
+            const { items, total } = await this.listTeamsUseCase.execute(tournamentId, pagination);
+            res.status(200).json({
+                teams: items.map(toPublicTeam),
+                pagination: buildPaginationMeta(pagination, total),
+            });
         } catch (error) {
             next(error);
         }

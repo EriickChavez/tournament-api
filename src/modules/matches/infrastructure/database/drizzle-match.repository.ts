@@ -1,8 +1,9 @@
-import { and, asc, eq, or } from 'drizzle-orm';
+import { and, asc, eq, or, sql } from 'drizzle-orm';
 import { db } from '../../../../config/database.js';
 import { matches } from './schema.js';
 import type { MatchRepository } from '../../domain/repositories/match.repository.js';
 import type { Match, MatchStatus } from '../../domain/entities/match.entity.js';
+import { Paginated, PaginationParams, toOffset } from '../../../../shared/utils/pagination.js';
 
 function toMatch(row: typeof matches.$inferSelect): Match {
     return {
@@ -29,26 +30,29 @@ export class DrizzleMatchRepository implements MatchRepository {
 
     async findByTournamentId(
         tournamentId: string,
+        pagination: PaginationParams,
         filters?: {
             categoryId?: string | undefined;
             status?: MatchStatus | undefined;
         },
-    ): Promise<Match[]> {
+    ): Promise<Paginated<Match>> {
         const conditions = [eq(matches.tournamentId, tournamentId)];
-        if (filters?.categoryId) {
-            conditions.push(eq(matches.categoryId, filters.categoryId));
-        }
-        if (filters?.status) {
-            conditions.push(eq(matches.status, filters.status));
-        }
+        if (filters?.categoryId) conditions.push(eq(matches.categoryId, filters.categoryId));
+        if (filters?.status) conditions.push(eq(matches.status, filters.status));
+        const condition = and(...conditions);
 
-        const rows = await db
-            .select()
-            .from(matches)
-            .where(and(...conditions))
-            .orderBy(asc(matches.scheduledAt));
+        const [rows, countRows] = await Promise.all([
+            db
+                .select()
+                .from(matches)
+                .where(condition)
+                .orderBy(asc(matches.scheduledAt))
+                .limit(pagination.limit)
+                .offset(toOffset(pagination)),
+            db.select({ count: sql<number>`count(*)::int` }).from(matches).where(condition),
+        ]);
 
-        return rows.map(toMatch);
+        return { items: rows.map(toMatch), total: countRows[0]?.count ?? 0 };
     }
 
     async create(input: {

@@ -1,3 +1,4 @@
+import { Paginated, PaginationParams } from '../../../../shared/utils/pagination.js';
 import type { Match, MatchStatus } from '../entities/match.entity.js';
 
 export interface MatchRepository {
@@ -10,11 +11,12 @@ export interface MatchRepository {
     findById(id: string): Promise<Match | null>;
     findByTournamentId(
         tournamentId: string,
+        pagination: PaginationParams,
         filters?: {
             categoryId?: string | undefined;
             status?: MatchStatus | undefined;
         },
-    ): Promise<Match[]>;
+    ): Promise<Paginated<Match>>;
     create(input: {
         tournamentId: string;
         categoryId: string;

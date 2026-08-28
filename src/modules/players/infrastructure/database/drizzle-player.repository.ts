@@ -1,8 +1,9 @@
-import { and, eq } from 'drizzle-orm';
 import { db } from '../../../../config/database.js';
 import { players, teamPlayers } from './schema.js';
 import type { PlayerRepository } from '../../domain/repositories/player.repository.js';
 import type { Player } from '../../domain/entities/player.entity.js';
+import { and, asc, eq, sql } from 'drizzle-orm';
+import { toOffset, type PaginationParams, type Paginated } from '../../../../shared/utils/pagination.js';
 
 type PlayerRow = typeof players.$inferSelect;
 type TeamPlayerRow = typeof teamPlayers.$inferSelect;
@@ -55,17 +56,32 @@ export class DrizzlePlayerRepository implements PlayerRepository {
         return toPlayer(row.player, row.membership);
     }
 
-    async findByTournamentId(tournamentId: string): Promise<Player[]> {
-        const rows = await db
-            .select({
-                player: players,
-                membership: teamPlayers,
-            })
-            .from(players)
-            .innerJoin(teamPlayers, eq(teamPlayers.playerId, players.id))
-            .where(eq(players.tournamentId, tournamentId));
+    async findByTournamentId(
+        tournamentId: string,
+        pagination: PaginationParams,
+    ): Promise<Paginated<Player>> {
+        const condition = eq(players.tournamentId, tournamentId);
 
-        return rows.map((row) => toPlayer(row.player, row.membership));
+        const [rows, countRows] = await Promise.all([
+            db
+                .select({ player: players, membership: teamPlayers })
+                .from(players)
+                .innerJoin(teamPlayers, eq(teamPlayers.playerId, players.id))
+                .where(condition)
+                .orderBy(asc(players.lastName), asc(players.firstName))
+                .limit(pagination.limit)
+                .offset(toOffset(pagination)),
+            db
+                .select({ count: sql<number>`count(*)::int` })
+                .from(players)
+                .innerJoin(teamPlayers, eq(teamPlayers.playerId, players.id))
+                .where(condition),
+        ]);
+
+        return {
+            items: rows.map((row) => toPlayer(row.player, row.membership)),
+            total: countRows[0]?.count ?? 0,
+        };
     }
 
     async create(input: {
