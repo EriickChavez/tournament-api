@@ -1,6 +1,12 @@
 import type { Match, MatchStatus } from '../entities/match.entity.js';
 
 export interface MatchRepository {
+    findFinishedByTournamentCategoryAndTeam(
+        tournamentId: string,
+        categoryId: string,
+        teamId: string,
+    ): Promise<Match[]>;
+    findFinishedByTournamentAndCategory(tournamentId: string, categoryId: string): Promise<Match[]>;
     findById(id: string): Promise<Match | null>;
     findByTournamentId(
         tournamentId: string,

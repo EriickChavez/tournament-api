@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, or } from 'drizzle-orm';
 import { db } from '../../../../config/database.js';
 import { matches } from './schema.js';
 import type { MatchRepository } from '../../domain/repositories/match.repository.js';
@@ -110,5 +110,37 @@ export class DrizzleMatchRepository implements MatchRepository {
     async delete(id: string): Promise<void> {
         const [row] = await db.delete(matches).where(eq(matches.id, id)).returning();
         if (!row) throw new Error('Failed to delete match');
+    }
+    async findFinishedByTournamentCategoryAndTeam(
+        tournamentId: string,
+        categoryId: string,
+        teamId: string,
+    ): Promise<Match[]> {
+        const rows = await db
+            .select()
+            .from(matches)
+            .where(
+                and(
+                    eq(matches.tournamentId, tournamentId),
+                    eq(matches.categoryId, categoryId),
+                    eq(matches.status, 'finished'),
+                    or(eq(matches.homeTeamId, teamId), eq(matches.awayTeamId, teamId)),
+                ),
+            );
+        return rows.map((row) => ({ ...row, status: row.status as MatchStatus }));
+    }
+
+    async findFinishedByTournamentAndCategory(tournamentId: string, categoryId: string): Promise<Match[]> {
+        const rows = await db
+            .select()
+            .from(matches)
+            .where(
+                and(
+                    eq(matches.tournamentId, tournamentId),
+                    eq(matches.categoryId, categoryId),
+                    eq(matches.status, 'finished'),
+                ),
+            );
+        return rows.map((row) => ({ ...row, status: row.status as MatchStatus }));
     }
 }
