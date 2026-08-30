@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { paginationQuerySchema } from '../../../../shared/utils/pagination.js';
 
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -67,3 +68,12 @@ export const updateTournamentSchema = z
             path: ['endDate'],
         },
     );
+
+export const listPublicTournamentsQuerySchema = paginationQuerySchema.extend({
+    search: z
+        .string()
+        .trim()
+        .max(200)
+        .optional()
+        .transform((val) => (val === '' ? undefined : val)),
+});

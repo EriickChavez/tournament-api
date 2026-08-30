@@ -3,6 +3,7 @@ import { DrizzleTournamentMemberRepository } from './infrastructure/database/dri
 import { SlugifyGenerator } from './infrastructure/slug/slugify-generator.js';
 import { CreateTournamentUseCase } from './application/use-cases/create-tournament.use-case.js';
 import { ListUserTournamentsUseCase } from './application/use-cases/list-user-tournaments.use-case.js';
+import { ListPublicTournamentsUseCase } from './application/use-cases/list-public-tournaments.use-case.js';
 import { UpdateTournamentUseCase } from './application/use-cases/update-tournament.use-case.js';
 import { TournamentController } from './presentation/tournament.controller.js';
 import { createTournamentRouter } from './presentation/tournament.routes.js';
@@ -19,6 +20,7 @@ const createTournamentUseCase = new CreateTournamentUseCase(
     slugGenerator,
 );
 const listUserTournamentsUseCase = new ListUserTournamentsUseCase(tournamentRepository);
+const listPublicTournamentsUseCase = new ListPublicTournamentsUseCase(tournamentRepository);
 const deleteUserTournamentsUseCase = new DeleteTournamentUseCase(
     tournamentRepository,
     tournamentMemberRepository,
@@ -32,6 +34,7 @@ const updateTournamentUseCase = new UpdateTournamentUseCase(
 const tournamentController = new TournamentController(
     createTournamentUseCase,
     listUserTournamentsUseCase,
+    listPublicTournamentsUseCase,
     updateTournamentUseCase,
     deleteUserTournamentsUseCase,
 );

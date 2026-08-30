@@ -1,9 +1,9 @@
-import { eq } from 'drizzle-orm';
+import { desc, eq, ilike, sql } from 'drizzle-orm';
 import { db } from '../../../../config/database.js';
 import { tournaments, tournamentMembers } from './schema.js';
 import { TournamentRepository } from '../../domain/repositories/tournaments.repository.js';
 import { Tournament } from '../../domain/entities/tournaments.entity.js';
-
+import { toOffset, type PaginationParams, type Paginated } from '../../../../shared/utils/pagination.js';
 
 export class DrizzleTournamentRepository implements TournamentRepository {
     async findById(id: string): Promise<Tournament | null> {
@@ -38,6 +38,27 @@ export class DrizzleTournamentRepository implements TournamentRepository {
             .where(eq(tournamentMembers.userId, userId));
 
         return rows;
+    }
+
+    async findAllPaginated(
+        pagination: PaginationParams,
+        search?: string | undefined,
+    ): Promise<Paginated<Tournament>> {
+        // ilike = LIKE case-insensitive de Postgres. Sin search, no filtramos nada.
+        const condition = search ? ilike(tournaments.name, `%${search}%`) : sql`true`;
+
+        const [items, countRows] = await Promise.all([
+            db
+                .select()
+                .from(tournaments)
+                .where(condition)
+                .orderBy(desc(tournaments.createdAt))
+                .limit(pagination.limit)
+                .offset(toOffset(pagination)),
+            db.select({ count: sql<number>`count(*)::int` }).from(tournaments).where(condition),
+        ]);
+
+        return { items, total: countRows[0]?.count ?? 0 };
     }
 
     async create(input: {

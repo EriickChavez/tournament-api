@@ -1,9 +1,15 @@
 import type { Tournament } from '../entities/tournaments.entity';
+import type { PaginationParams, Paginated } from '../../../../shared/utils/pagination.js';
 
 export interface TournamentRepository {
     findById(id: string): Promise<Tournament | null>;
     findBySlug(slug: string): Promise<Tournament | null>;
     findAllForUser(userId: string): Promise<Array<Tournament & { roleId: string }>>;
+    /** Listado público paginado, con búsqueda opcional por nombre. */
+    findAllPaginated(
+        pagination: PaginationParams,
+        search?: string | undefined,
+    ): Promise<Paginated<Tournament>>;
     create(input: {
         name: string;
         subtitle: string | null;

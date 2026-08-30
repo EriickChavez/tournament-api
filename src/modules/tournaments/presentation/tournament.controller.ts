@@ -1,16 +1,23 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { CreateTournamentUseCase } from '../application/use-cases/create-tournament.use-case.js';
 import type { ListUserTournamentsUseCase } from '../application/use-cases/list-user-tournaments.use-case.js';
+import type { ListPublicTournamentsUseCase } from '../application/use-cases/list-public-tournaments.use-case.js';
 import type { UpdateTournamentUseCase } from '../application/use-cases/update-tournament.use-case.js';
 import type { DeleteTournamentUseCase } from '../application/use-cases/delete-tournament.use-case.js';
-import { createTournamentSchema, updateTournamentSchema } from './schemas/tournament.schemas.js';
+import {
+    createTournamentSchema,
+    updateTournamentSchema,
+    listPublicTournamentsQuerySchema,
+} from './schemas/tournament.schemas.js';
 import { toPublicTournament, toPublicTournamentWithRole } from './utils/public-tournament.js';
 import { AppError } from '../../../shared/errors/app-error.js';
+import { buildPaginationMeta } from '../../../shared/utils/pagination.js';
 
 export class TournamentController {
     constructor(
         private readonly createTournamentUseCase: CreateTournamentUseCase,
         private readonly listUserTournamentsUseCase: ListUserTournamentsUseCase,
+        private readonly listPublicTournamentsUseCase: ListPublicTournamentsUseCase,
         private readonly updateTournamentUseCase: UpdateTournamentUseCase,
         private readonly deleteTournamentUseCase: DeleteTournamentUseCase,
     ) { }
@@ -23,6 +30,26 @@ export class TournamentController {
             const input = createTournamentSchema.parse(req.body);
             const tournament = await this.createTournamentUseCase.execute({ ...input, userId: req.userId });
             res.status(201).json({ tournament: toPublicTournament(tournament) });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /**
+     * Público, sin autenticación. `search` es opcional: sin él, es el listado
+     * completo; con él, filtra por nombre (case-insensitive).
+     */
+    listPublic = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const { page, limit, search } = listPublicTournamentsQuerySchema.parse(req.query);
+            const { items, total } = await this.listPublicTournamentsUseCase.execute(
+                { page, limit },
+                search,
+            );
+            res.status(200).json({
+                tournaments: items.map(toPublicTournament),
+                pagination: buildPaginationMeta({ page, limit }, total),
+            });
         } catch (error) {
             next(error);
         }
