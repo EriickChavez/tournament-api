@@ -39,6 +39,24 @@ export class MatchController {
             next(error);
         }
     };
+    listPublicByTournament = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const tournamentId = req.params.tournamentId as string;
+            const query = listMatchesQuerySchema.parse(req.query);
+            const { page, limit, ...filters } = query;
+            const { items, total } = await this.listMatchesUseCase.execute(
+                tournamentId,
+                { page, limit },
+                filters,
+            );
+            res.status(200).json({
+                matches: items.map(toPublicMatch),
+                pagination: buildPaginationMeta({ page, limit }, total),
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
 
     create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
