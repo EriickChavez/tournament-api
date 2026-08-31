@@ -8,7 +8,6 @@ export function createTournamentMatchRouter(
     requireAuth: ReturnType<typeof createRequireAuth>,
 ): Router {
     const router = Router({ mergeParams: true });
-    // Público primero: calendario de servicio (fans / app), sin auth
     router.get('/public', publicReadRateLimiter, controller.listPublicByTournament);
     router.get('/', requireAuth, controller.listByTournament);
     router.post('/', requireAuth, controller.create);
@@ -20,6 +19,7 @@ export function createMatchRouter(
     requireAuth: ReturnType<typeof createRequireAuth>,
 ): Router {
     const router = Router();
+    router.get('/:id', requireAuth, controller.getById);
     router.patch('/:id', requireAuth, controller.update);
     router.delete('/:id', requireAuth, controller.delete);
     return router;

@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import type { CreateTournamentUseCase } from '../application/use-cases/create-tournament.use-case.js';
 import type { ListUserTournamentsUseCase } from '../application/use-cases/list-user-tournaments.use-case.js';
 import type { ListPublicTournamentsUseCase } from '../application/use-cases/list-public-tournaments.use-case.js';
+import type { GetTournamentUseCase } from '../application/use-cases/get-tournament.use-case.js';
 import type { UpdateTournamentUseCase } from '../application/use-cases/update-tournament.use-case.js';
 import type { DeleteTournamentUseCase } from '../application/use-cases/delete-tournament.use-case.js';
 import {
@@ -18,6 +19,7 @@ export class TournamentController {
         private readonly createTournamentUseCase: CreateTournamentUseCase,
         private readonly listUserTournamentsUseCase: ListUserTournamentsUseCase,
         private readonly listPublicTournamentsUseCase: ListPublicTournamentsUseCase,
+        private readonly getTournamentUseCase: GetTournamentUseCase,
         private readonly updateTournamentUseCase: UpdateTournamentUseCase,
         private readonly deleteTournamentUseCase: DeleteTournamentUseCase,
     ) { }
@@ -28,17 +30,16 @@ export class TournamentController {
                 throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
             }
             const input = createTournamentSchema.parse(req.body);
-            const tournament = await this.createTournamentUseCase.execute({ ...input, userId: req.userId });
+            const tournament = await this.createTournamentUseCase.execute({
+                ...input,
+                userId: req.userId,
+            });
             res.status(201).json({ tournament: toPublicTournament(tournament) });
         } catch (error) {
             next(error);
         }
     };
 
-    /**
-     * Público, sin autenticación. `search` es opcional: sin él, es el listado
-     * completo; con él, filtra por nombre (case-insensitive).
-     */
     listPublic = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const { page, limit, search } = listPublicTournamentsQuerySchema.parse(req.query);
@@ -61,7 +62,24 @@ export class TournamentController {
                 throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
             }
             const tournaments = await this.listUserTournamentsUseCase.execute(req.userId);
-            res.status(200).json({ tournaments: tournaments.map(toPublicTournamentWithRole) });
+            res.status(200).json({
+                tournaments: tournaments.map(toPublicTournamentWithRole),
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    getById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            if (!req.userId) {
+                throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
+            }
+            const tournament = await this.getTournamentUseCase.execute({
+                tournamentId: req.params.id as string,
+                userId: req.userId,
+            });
+            res.status(200).json({ tournament: toPublicTournamentWithRole(tournament) });
         } catch (error) {
             next(error);
         }

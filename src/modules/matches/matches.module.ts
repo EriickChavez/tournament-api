@@ -7,6 +7,7 @@ import { CreateMatchUseCase } from './application/use-cases/create-match.use-cas
 import { UpdateMatchUseCase } from './application/use-cases/update-match.use-case.js';
 import { DeleteMatchUseCase } from './application/use-cases/delete-match.use-case.js';
 import { ListMatchesUseCase } from './application/use-cases/list-matches.use-case.js';
+import { GetMatchUseCase } from './application/use-cases/get-match.use-case.js';
 import { MatchController } from './presentation/match.controller.js';
 import { createMatchRouter, createTournamentMatchRouter } from './presentation/match.routes.js';
 import { requireAuth } from '../auth/auth.module.js';
@@ -33,13 +34,25 @@ const updateMatchUseCase = new UpdateMatchUseCase(
     recalculateMatchStatsService,
 );
 const deleteMatchUseCase = new DeleteMatchUseCase(matchRepository, tournamentMemberRepository);
-const listMatchesUseCase = new ListMatchesUseCase(matchRepository, tournamentRepository);
+const listMatchesUseCase = new ListMatchesUseCase(
+    matchRepository,
+    tournamentRepository,
+    teamRepository,
+    categoryRepository,
+);
+const getMatchUseCase = new GetMatchUseCase(
+    matchRepository,
+    teamRepository,
+    categoryRepository,
+    tournamentMemberRepository,
+);
 
 const matchController = new MatchController(
     createMatchUseCase,
     updateMatchUseCase,
     deleteMatchUseCase,
     listMatchesUseCase,
+    getMatchUseCase,
 );
 
 export const tournamentMatchRouter = createTournamentMatchRouter(matchController, requireAuth);

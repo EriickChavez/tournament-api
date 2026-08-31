@@ -3,6 +3,7 @@ import type { PaginationParams, Paginated } from '../../../../shared/utils/pagin
 
 export interface TeamRepository {
     findById(id: string): Promise<Team | null>;
+    findByIds(ids: string[]): Promise<Team[]>;
     findByTournamentAndName(tournamentId: string, name: string): Promise<Team | null>;
     findByTournamentId(tournamentId: string, pagination: PaginationParams): Promise<Paginated<Team>>;
     create(input: {

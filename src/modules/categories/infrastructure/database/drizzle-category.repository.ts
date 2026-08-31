@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm';
+import { asc, eq, inArray } from 'drizzle-orm';
 import { db } from '../../../../config/database.js';
 import { categories } from './schema.js';
 import type { CategoryRepository } from '../../domain/repositories/category.repository.js';
@@ -42,6 +42,12 @@ export class DrizzleCategoryRepository implements CategoryRepository {
 
         if (!row) throw new Error('Failed to create category');
         return row;
+    }
+
+    async findByIds(ids: string[]): Promise<Category[]> {
+        if (ids.length === 0) return [];
+        const unique = [...new Set(ids)];
+        return db.select().from(categories).where(inArray(categories.id, unique));
     }
 
     async update(

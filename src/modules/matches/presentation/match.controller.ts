@@ -3,12 +3,13 @@ import type { CreateMatchUseCase } from '../application/use-cases/create-match.u
 import type { UpdateMatchUseCase } from '../application/use-cases/update-match.use-case.js';
 import type { DeleteMatchUseCase } from '../application/use-cases/delete-match.use-case.js';
 import type { ListMatchesUseCase } from '../application/use-cases/list-matches.use-case.js';
+import type { GetMatchUseCase } from '../application/use-cases/get-match.use-case.js';
 import {
     createMatchSchema,
     updateMatchSchema,
     listMatchesQuerySchema,
 } from './schemas/match.schemas.js';
-import { toPublicMatch } from './utils/public-match.js';
+import { toPublicMatch, toPublicMatchDetails } from './utils/public-match.js';
 import { AppError } from '../../../shared/errors/app-error.js';
 import { buildPaginationMeta } from '../../../shared/utils/pagination.js';
 
@@ -18,41 +19,38 @@ export class MatchController {
         private readonly updateMatchUseCase: UpdateMatchUseCase,
         private readonly deleteMatchUseCase: DeleteMatchUseCase,
         private readonly listMatchesUseCase: ListMatchesUseCase,
+        private readonly getMatchUseCase: GetMatchUseCase,
     ) { }
 
     listByTournament = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             if (!req.userId) throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
-            const tournamentId = req.params.tournamentId as string;
-            const query = listMatchesQuerySchema.parse(req.query);
-            const { page, limit, ...filters } = query;
-            const { items, total } = await this.listMatchesUseCase.execute(
-                tournamentId,
-                { page, limit },
-                filters,
-            );
-            res.status(200).json({
-                matches: items.map(toPublicMatch),
-                pagination: buildPaginationMeta({ page, limit }, total),
-            });
+            await this.respondList(req, res);
         } catch (error) {
             next(error);
         }
     };
-    listPublicByTournament = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+
+    listPublicByTournament = async (
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ): Promise<void> => {
         try {
-            const tournamentId = req.params.tournamentId as string;
-            const query = listMatchesQuerySchema.parse(req.query);
-            const { page, limit, ...filters } = query;
-            const { items, total } = await this.listMatchesUseCase.execute(
-                tournamentId,
-                { page, limit },
-                filters,
-            );
-            res.status(200).json({
-                matches: items.map(toPublicMatch),
-                pagination: buildPaginationMeta({ page, limit }, total),
+            await this.respondList(req, res);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    getById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            if (!req.userId) throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
+            const match = await this.getMatchUseCase.execute({
+                matchId: req.params.id as string,
+                userId: req.userId,
             });
+            res.status(200).json({ match: toPublicMatchDetails(match) });
         } catch (error) {
             next(error);
         }
@@ -82,10 +80,9 @@ export class MatchController {
     update = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             if (!req.userId) throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
-            const matchId = req.params.id as string;
             const input = updateMatchSchema.parse(req.body);
             const match = await this.updateMatchUseCase.execute({
-                matchId,
+                matchId: req.params.id as string,
                 userId: req.userId,
                 categoryId: input.categoryId,
                 homeTeamId: input.homeTeamId,
@@ -103,11 +100,28 @@ export class MatchController {
     delete = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             if (!req.userId) throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
-            const matchId = req.params.id as string;
-            await this.deleteMatchUseCase.execute({ matchId, userId: req.userId });
+            await this.deleteMatchUseCase.execute({
+                matchId: req.params.id as string,
+                userId: req.userId,
+            });
             res.status(200).json({ message: 'Match deleted successfully' });
         } catch (error) {
             next(error);
         }
     };
+
+    private async respondList(req: Request, res: Response): Promise<void> {
+        const tournamentId = req.params.tournamentId as string;
+        const query = listMatchesQuerySchema.parse(req.query);
+        const { page, limit, ...filters } = query;
+        const { items, total } = await this.listMatchesUseCase.execute(
+            tournamentId,
+            { page, limit },
+            filters,
+        );
+        res.status(200).json({
+            matches: items.map(toPublicMatchDetails),
+            pagination: buildPaginationMeta({ page, limit }, total),
+        });
+    }
 }

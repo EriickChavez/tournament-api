@@ -27,3 +27,9 @@ export class NotTournamentOwnerOrAdminError extends AppError {
         );
     }
 }
+
+export class NotTournamentMemberError extends AppError {
+    constructor() {
+        super(403, 'NOT_TOURNAMENT_MEMBER', 'You are not a member of this tournament.');
+    }
+}

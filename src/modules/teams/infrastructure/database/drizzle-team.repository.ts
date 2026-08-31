@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '../../../../config/database.js';
 import { teams } from './schema.js';
 import type { TeamRepository } from '../../domain/repositories/team.repository.js';
@@ -61,6 +61,12 @@ export class DrizzleTeamRepository implements TeamRepository {
             .returning();
         if (!row) throw new Error('Failed to create team');
         return row;
+    }
+
+    async findByIds(ids: string[]): Promise<Team[]> {
+        if (ids.length === 0) return [];
+        const unique = [...new Set(ids)];
+        return db.select().from(teams).where(inArray(teams.id, unique));
     }
 
     async update(
