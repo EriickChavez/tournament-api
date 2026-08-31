@@ -61,8 +61,8 @@ export class CreatePlayerUseCase {
             throw new InvalidTeamForPlayerError();
         }
 
-        const existing = await this.playerRepository.findByTournamentAndNumber(
-            input.tournamentId,
+        const existing = await this.playerRepository.findByTeamAndNumber(
+            input.teamId,
             input.number,
         );
         if (existing) throw new JerseyNumberAlreadyInUseError(input.number);

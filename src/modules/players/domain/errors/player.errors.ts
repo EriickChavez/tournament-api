@@ -11,7 +11,7 @@ export class JerseyNumberAlreadyInUseError extends AppError {
         super(
             409,
             'JERSEY_NUMBER_ALREADY_IN_USE',
-            `Jersey number ${number} is already in use in this tournament.`,
+            `Jersey number ${number} is already in use in this team.`,
         );
     }
 }

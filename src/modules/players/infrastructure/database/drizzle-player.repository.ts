@@ -41,7 +41,7 @@ export class DrizzlePlayerRepository implements PlayerRepository {
         return toPlayer(row.player, row.membership);
     }
 
-    async findByTournamentAndNumber(tournamentId: string, number: number): Promise<Player | null> {
+    async findByTeamAndNumber(teamId: string, number: number): Promise<Player | null> {
         const [row] = await db
             .select({
                 player: players,
@@ -49,7 +49,7 @@ export class DrizzlePlayerRepository implements PlayerRepository {
             })
             .from(players)
             .innerJoin(teamPlayers, eq(teamPlayers.playerId, players.id))
-            .where(and(eq(players.tournamentId, tournamentId), eq(players.number, number)))
+            .where(and(eq(teamPlayers.teamId, teamId), eq(players.number, number)))
             .limit(1);
 
         if (!row) return null;

@@ -64,13 +64,17 @@ export class UpdatePlayerUseCase {
             }
         }
 
-        if (input.number !== undefined && input.number !== player.number) {
-            const existing = await this.playerRepository.findByTournamentAndNumber(
-                player.tournamentId,
-                input.number,
+        const numberChanged = input.number !== undefined && input.number !== player.number;
+        const teamChanged = input.teamId !== undefined && input.teamId !== player.teamId;
+        const nextNumber = input.number !== undefined ? input.number : player.number;
+
+        if ((numberChanged || teamChanged) && nextNumber !== null) {
+            const existing = await this.playerRepository.findByTeamAndNumber(
+                nextTeamId,
+                nextNumber,
             );
             if (existing && existing.id !== player.id) {
-                throw new JerseyNumberAlreadyInUseError(input.number);
+                throw new JerseyNumberAlreadyInUseError(nextNumber);
             }
         }
 

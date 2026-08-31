@@ -6,32 +6,27 @@ import {
     date,
     boolean,
     timestamp,
-    unique,
 } from 'drizzle-orm/pg-core';
 import { tournaments } from '../../../tournaments/infrastructure/database/schema.js';
 import { categories } from '../../../categories/infrastructure/database/schema.js';
 import { teams } from '../../../teams/infrastructure/database/schema.js';
 import { users } from '../../../auth/infrastructure/database/schema.js';
 
-export const players = pgTable(
-    'jugadores',
-    {
-        id: uuid('id').primaryKey().defaultRandom(),
-        tournamentId: uuid('torneo_id')
-            .notNull()
-            .references(() => tournaments.id, { onDelete: 'cascade' }),
-        categoryId: uuid('categoria_id')
-            .notNull()
-            .references(() => categories.id),
-        firstName: varchar('nombre', { length: 120 }).notNull(),
-        lastName: varchar('apellido', { length: 120 }).notNull(),
-        birthDate: date('fecha_nacimiento'),
-        number: integer('numero'),
-        createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-        updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-    },
-    (table) => [unique('uq_jugadores_torneo_numero').on(table.tournamentId, table.number)],
-);
+export const players = pgTable('jugadores', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tournamentId: uuid('torneo_id')
+        .notNull()
+        .references(() => tournaments.id, { onDelete: 'cascade' }),
+    categoryId: uuid('categoria_id')
+        .notNull()
+        .references(() => categories.id),
+    firstName: varchar('nombre', { length: 120 }).notNull(),
+    lastName: varchar('apellido', { length: 120 }).notNull(),
+    birthDate: date('fecha_nacimiento'),
+    number: integer('numero'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const teamPlayers = pgTable('equipo_jugador', {
     id: uuid('id').primaryKey().defaultRandom(),
