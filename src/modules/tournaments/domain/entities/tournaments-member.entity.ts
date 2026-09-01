@@ -7,3 +7,8 @@ export interface TournamentMember {
     createdAt: Date;
     updatedAt: Date;
 }
+
+export interface TournamentMemberWithUser extends TournamentMember {
+    displayName: string;
+    avatarUrl: string | null;
+}

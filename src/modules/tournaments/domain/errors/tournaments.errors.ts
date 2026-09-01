@@ -33,3 +33,26 @@ export class NotTournamentMemberError extends AppError {
         super(403, 'NOT_TOURNAMENT_MEMBER', 'You are not a member of this tournament.');
     }
 }
+export class AlreadyTournamentMemberError extends AppError {
+    constructor() {
+        super(409, 'ALREADY_TOURNAMENT_MEMBER', 'This user is already a member of the tournament.');
+    }
+}
+
+export class MemberNotFoundError extends AppError {
+    constructor() {
+        super(404, 'MEMBER_NOT_FOUND', 'Membership not found.');
+    }
+}
+
+export class TargetUserNotFoundError extends AppError {
+    constructor() {
+        super(404, 'TARGET_USER_NOT_FOUND', 'The user to invite was not found.');
+    }
+}
+
+export class CannotModifyOwnerError extends AppError {
+    constructor() {
+        super(403, 'CANNOT_MODIFY_OWNER', 'The tournament owner cannot be modified or removed.');
+    }
+}

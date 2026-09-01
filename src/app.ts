@@ -8,7 +8,7 @@ import { authRouter } from './modules/auth/auth.module.js';
 import { healthRouter } from './shared/health/health.route.js';
 import { env } from './config/env.js';
 import { logger } from './shared/logging/logger.js';
-import { tournamentRouter } from './modules/tournaments/tournaments.module.js';
+import { memberRouter, tournamentRouter } from './modules/tournaments/tournaments.module.js';
 import {
     categoryRouter,
     tournamentCategoryRouter,
@@ -46,6 +46,7 @@ app.use('/matches', matchRouter);
 app.use('/matches/:matchId/events', matchEventRouter);
 app.use('/match-events', standaloneMatchEventRouter);
 app.use('/tournaments/:tournamentId/categories/:categoryId', standingsRouter);
+app.use('/tournaments/:tournamentId/members', memberRouter);
 
 app.use(errorHandler);
 
