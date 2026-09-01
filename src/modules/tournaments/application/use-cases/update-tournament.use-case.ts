@@ -41,7 +41,6 @@ export class UpdateTournamentUseCase {
                 throw new SlugAlreadyInUseError(slug);
             }
         }
-        console.log({ input })
 
         return this.tournamentRepository.update(input.tournamentId, {
             name: input.name,
