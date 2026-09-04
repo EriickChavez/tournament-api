@@ -3,8 +3,9 @@ import type { InviteMemberUseCase } from '../application/use-cases/invite-member
 import type { ListMembersUseCase } from '../application/use-cases/list-members.use-case.js';
 import type { UpdateMemberRoleUseCase } from '../application/use-cases/update-member-role.use-case.js';
 import type { RemoveMemberUseCase } from '../application/use-cases/remove-member.use-case.js';
-import { inviteMemberSchema } from './schemas/member.schemas.js';
+import { inviteMemberSchema, listMembersQuerySchema } from './schemas/member.schemas.js';
 import { AppError } from '../../../shared/errors/app-error.js';
+import { buildPaginationMeta } from '../../../shared/utils/pagination.js';
 
 export class MemberController {
     constructor(
@@ -32,11 +33,16 @@ export class MemberController {
     list = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             if (!req.userId) throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
-            const members = await this.listMembersUseCase.execute({
+            const pagination = listMembersQuerySchema.parse(req.query);
+            const { items, total } = await this.listMembersUseCase.execute({
                 tournamentId: req.params.tournamentId as string,
                 requesterId: req.userId,
+                pagination,
             });
-            res.status(200).json({ members });
+            res.status(200).json({
+                members: items,
+                pagination: buildPaginationMeta(pagination, total),
+            });
         } catch (error) {
             next(error);
         }
