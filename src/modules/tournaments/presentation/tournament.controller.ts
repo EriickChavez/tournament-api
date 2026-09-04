@@ -3,6 +3,7 @@ import type { CreateTournamentUseCase } from '../application/use-cases/create-to
 import type { ListUserTournamentsUseCase } from '../application/use-cases/list-user-tournaments.use-case.js';
 import type { ListPublicTournamentsUseCase } from '../application/use-cases/list-public-tournaments.use-case.js';
 import type { GetTournamentUseCase } from '../application/use-cases/get-tournament.use-case.js';
+import type { GetPublicTournamentUseCase } from '../application/use-cases/get-public-tournament.use-case.js';
 import type { UpdateTournamentUseCase } from '../application/use-cases/update-tournament.use-case.js';
 import type { DeleteTournamentUseCase } from '../application/use-cases/delete-tournament.use-case.js';
 import {
@@ -13,6 +14,7 @@ import {
 import { toPublicTournament, toPublicTournamentWithRole } from './utils/public-tournament.js';
 import { AppError } from '../../../shared/errors/app-error.js';
 import { buildPaginationMeta } from '../../../shared/utils/pagination.js';
+import { isUuid } from '../../../shared/utils/is-uuid.js';
 
 export class TournamentController {
     constructor(
@@ -20,6 +22,7 @@ export class TournamentController {
         private readonly listUserTournamentsUseCase: ListUserTournamentsUseCase,
         private readonly listPublicTournamentsUseCase: ListPublicTournamentsUseCase,
         private readonly getTournamentUseCase: GetTournamentUseCase,
+        private readonly getPublicTournamentUseCase: GetPublicTournamentUseCase,
         private readonly updateTournamentUseCase: UpdateTournamentUseCase,
         private readonly deleteTournamentUseCase: DeleteTournamentUseCase,
     ) { }
@@ -70,16 +73,29 @@ export class TournamentController {
         }
     };
 
-    getById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    /**
+     * Opción A: mismo path.
+     * - UUID → detalle admin (requireAuth + membership)
+     * - slug → detalle público (sin auth)
+     */
+    getByParam = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            if (!req.userId) {
-                throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
+            const param = req.params.id as string;
+
+            if (isUuid(param)) {
+                if (!req.userId) {
+                    throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
+                }
+                const tournament = await this.getTournamentUseCase.execute({
+                    tournamentId: param,
+                    userId: req.userId,
+                });
+                res.status(200).json({ tournament: toPublicTournamentWithRole(tournament) });
+                return;
             }
-            const tournament = await this.getTournamentUseCase.execute({
-                tournamentId: req.params.id as string,
-                userId: req.userId,
-            });
-            res.status(200).json({ tournament: toPublicTournamentWithRole(tournament) });
+
+            const tournament = await this.getPublicTournamentUseCase.execute(param);
+            res.status(200).json({ tournament: toPublicTournament(tournament) });
         } catch (error) {
             next(error);
         }

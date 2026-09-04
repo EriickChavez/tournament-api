@@ -43,12 +43,10 @@ export class MatchController {
         }
     };
 
-    getById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    getByIdPublic = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            if (!req.userId) throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
             const match = await this.getMatchUseCase.execute({
                 matchId: req.params.id as string,
-                userId: req.userId,
             });
             res.status(200).json({ match: toPublicMatchDetails(match) });
         } catch (error) {

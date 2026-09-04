@@ -9,7 +9,7 @@ export function createTournamentMatchRouter(
 ): Router {
     const router = Router({ mergeParams: true });
     router.get('/public', publicReadRateLimiter, controller.listPublicByTournament);
-    router.get('/', requireAuth, controller.listByTournament);
+    router.get('/', publicReadRateLimiter, controller.listPublicByTournament);
     router.post('/', requireAuth, controller.create);
     return router;
 }
@@ -19,7 +19,8 @@ export function createMatchRouter(
     requireAuth: ReturnType<typeof createRequireAuth>,
 ): Router {
     const router = Router();
-    router.get('/:id', requireAuth, controller.getById);
+    // Detalle público
+    router.get('/:id', publicReadRateLimiter, controller.getByIdPublic);
     router.patch('/:id', requireAuth, controller.update);
     router.delete('/:id', requireAuth, controller.delete);
     return router;

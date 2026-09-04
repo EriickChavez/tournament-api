@@ -7,8 +7,9 @@ import { CreatePlayerUseCase } from './application/use-cases/create-player.use-c
 import { UpdatePlayerUseCase } from './application/use-cases/update-player.use-case.js';
 import { DeletePlayerUseCase } from './application/use-cases/delete-player.use-case.js';
 import { ListPlayersUseCase } from './application/use-cases/list-players.use-case.js';
+import { ListPlayersByTeamUseCase } from './application/use-cases/list-players-by-team.use-case.js';
 import { PlayerController } from './presentation/player.controller.js';
-import { createPlayerRouter, createTournamentPlayerRouter } from './presentation/player.routes.js';
+import { createPlayerRouter, createTournamentPlayerRouter, createTeamPlayersRouter } from './presentation/player.routes.js';
 import { requireAuth } from '../auth/auth.module.js';
 
 const playerRepository = new DrizzlePlayerRepository();
@@ -32,13 +33,17 @@ const updatePlayerUseCase = new UpdatePlayerUseCase(
 );
 const deletePlayerUseCase = new DeletePlayerUseCase(playerRepository, tournamentMemberRepository);
 const listPlayersUseCase = new ListPlayersUseCase(playerRepository, tournamentRepository);
+const listPlayersByTeamUseCase = new ListPlayersByTeamUseCase(playerRepository, teamRepository);
 
 const playerController = new PlayerController(
     createPlayerUseCase,
     updatePlayerUseCase,
     deletePlayerUseCase,
     listPlayersUseCase,
+    listPlayersByTeamUseCase,
 );
 
 export const tournamentPlayerRouter = createTournamentPlayerRouter(playerController, requireAuth);
 export const playerRouter = createPlayerRouter(playerController, requireAuth);
+
+export const teamPlayersRouter = createTeamPlayersRouter(playerController);

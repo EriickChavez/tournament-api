@@ -5,6 +5,7 @@ import { CreateTournamentUseCase } from './application/use-cases/create-tourname
 import { ListUserTournamentsUseCase } from './application/use-cases/list-user-tournaments.use-case.js';
 import { ListPublicTournamentsUseCase } from './application/use-cases/list-public-tournaments.use-case.js';
 import { GetTournamentUseCase } from './application/use-cases/get-tournament.use-case.js';
+import { GetPublicTournamentUseCase } from './application/use-cases/get-public-tournament.use-case.js';
 import { UpdateTournamentUseCase } from './application/use-cases/update-tournament.use-case.js';
 import { DeleteTournamentUseCase } from './application/use-cases/delete-tournament.use-case.js';
 import { TournamentController } from './presentation/tournament.controller.js';
@@ -33,6 +34,7 @@ const getTournamentUseCase = new GetTournamentUseCase(
     tournamentRepository,
     tournamentMemberRepository,
 );
+const getPublicTournamentUseCase = new GetPublicTournamentUseCase(tournamentRepository);
 const updateTournamentUseCase = new UpdateTournamentUseCase(
     tournamentRepository,
     tournamentMemberRepository,
@@ -48,13 +50,18 @@ const tournamentController = new TournamentController(
     listUserTournamentsUseCase,
     listPublicTournamentsUseCase,
     getTournamentUseCase,
+    getPublicTournamentUseCase,
     updateTournamentUseCase,
     deleteTournamentUseCase,
 );
 
 const userRepository = new DrizzleUserRepository();
 
-const inviteMemberUseCase = new InviteMemberUseCase(tournamentRepository, tournamentMemberRepository, userRepository);
+const inviteMemberUseCase = new InviteMemberUseCase(
+    tournamentRepository,
+    tournamentMemberRepository,
+    userRepository,
+);
 const listMembersUseCase = new ListMembersUseCase(tournamentMemberRepository);
 const updateMemberRoleUseCase = new UpdateMemberRoleUseCase(tournamentMemberRepository);
 const removeMemberUseCase = new RemoveMemberUseCase(tournamentMemberRepository);

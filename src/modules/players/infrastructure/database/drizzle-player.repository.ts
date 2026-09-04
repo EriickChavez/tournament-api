@@ -84,6 +84,34 @@ export class DrizzlePlayerRepository implements PlayerRepository {
         };
     }
 
+    async findByTeamId(
+        teamId: string,
+        pagination: PaginationParams,
+    ): Promise<Paginated<Player>> {
+        const condition = eq(teamPlayers.teamId, teamId);
+
+        const [rows, countRows] = await Promise.all([
+            db
+                .select({ player: players, membership: teamPlayers })
+                .from(players)
+                .innerJoin(teamPlayers, eq(teamPlayers.playerId, players.id))
+                .where(condition)
+                .orderBy(asc(players.number), asc(players.lastName), asc(players.firstName))
+                .limit(pagination.limit)
+                .offset(toOffset(pagination)),
+            db
+                .select({ count: sql<number>`count(*)::int` })
+                .from(players)
+                .innerJoin(teamPlayers, eq(teamPlayers.playerId, players.id))
+                .where(condition),
+        ]);
+
+        return {
+            items: rows.map((row) => toPlayer(row.player, row.membership)),
+            total: countRows[0]?.count ?? 0,
+        };
+    }
+
     async create(input: {
         tournamentId: string;
         categoryId: string;

@@ -14,7 +14,7 @@ import {
     tournamentCategoryRouter,
 } from './modules/categories/categories.module.js';
 import { teamRouter, tournamentTeamRouter } from './modules/teams/teams.module.js';
-import { playerRouter, tournamentPlayerRouter } from './modules/players/players.module.js';
+import { playerRouter, tournamentPlayerRouter, teamPlayersRouter } from './modules/players/players.module.js';
 import { matchRouter, tournamentMatchRouter } from './modules/matches/matches.module.js';
 import { matchEventRouter, standaloneMatchEventRouter } from './modules/match-events/match-events.module.js';
 import { standingsRouter } from './modules/standings/standings.module.js';
@@ -39,6 +39,7 @@ app.use('/tournaments/:tournamentId/categories', tournamentCategoryRouter);
 app.use('/categories', categoryRouter);
 app.use('/tournaments/:tournamentId/teams', tournamentTeamRouter);
 app.use('/teams', teamRouter);
+app.use('/teams/:teamId/players', teamPlayersRouter);
 app.use('/tournaments/:tournamentId/players', tournamentPlayerRouter);
 app.use('/players', playerRouter);
 app.use('/tournaments/:tournamentId/matches', tournamentMatchRouter);

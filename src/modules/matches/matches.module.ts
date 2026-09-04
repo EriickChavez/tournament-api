@@ -44,7 +44,6 @@ const getMatchUseCase = new GetMatchUseCase(
     matchRepository,
     teamRepository,
     categoryRepository,
-    tournamentMemberRepository,
 );
 
 const matchController = new MatchController(

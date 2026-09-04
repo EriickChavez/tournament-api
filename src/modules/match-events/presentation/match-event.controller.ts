@@ -15,7 +15,6 @@ export class MatchEventController {
 
     listByMatch = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            if (!req.userId) throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
             const matchId = req.params.matchId as string;
             const events = await this.listMatchEventsUseCase.execute(matchId);
             res.status(200).json({ events: events.map(toPublicMatchEvent) });

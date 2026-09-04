@@ -3,6 +3,7 @@ import type { CreatePlayerUseCase } from '../application/use-cases/create-player
 import type { UpdatePlayerUseCase } from '../application/use-cases/update-player.use-case.js';
 import type { DeletePlayerUseCase } from '../application/use-cases/delete-player.use-case.js';
 import type { ListPlayersUseCase } from '../application/use-cases/list-players.use-case.js';
+import type { ListPlayersByTeamUseCase } from '../application/use-cases/list-players-by-team.use-case.js';
 import { createPlayerSchema, updatePlayerSchema } from './schemas/player.schemas.js';
 import { toPublicPlayer } from './utils/public-player.js';
 import { AppError } from '../../../shared/errors/app-error.js';
@@ -14,6 +15,7 @@ export class PlayerController {
         private readonly updatePlayerUseCase: UpdatePlayerUseCase,
         private readonly deletePlayerUseCase: DeletePlayerUseCase,
         private readonly listPlayersUseCase: ListPlayersUseCase,
+        private readonly listPlayersByTeamUseCase: ListPlayersByTeamUseCase,
     ) { }
 
     listByTournament = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -22,6 +24,21 @@ export class PlayerController {
             const tournamentId = req.params.tournamentId as string;
             const pagination = paginationQuerySchema.parse(req.query);
             const { items, total } = await this.listPlayersUseCase.execute(tournamentId, pagination);
+            res.status(200).json({
+                players: items.map(toPublicPlayer),
+                pagination: buildPaginationMeta(pagination, total),
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+
+    listByTeam = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const teamId = req.params.teamId as string;
+            const pagination = paginationQuerySchema.parse(req.query);
+            const { items, total } = await this.listPlayersByTeamUseCase.execute(teamId, pagination);
             res.status(200).json({
                 players: items.map(toPublicPlayer),
                 pagination: buildPaginationMeta(pagination, total),

@@ -6,6 +6,7 @@ export interface PlayerRepository {
     findById(id: string): Promise<Player | null>;
     findByTeamAndNumber(teamId: string, number: number): Promise<Player | null>;
     findByTournamentId(tournamentId: string, pagination: PaginationParams): Promise<Paginated<Player>>;
+    findByTeamId(teamId: string, pagination: PaginationParams): Promise<Paginated<Player>>;
     create(input: {
         tournamentId: string;
         categoryId: string;

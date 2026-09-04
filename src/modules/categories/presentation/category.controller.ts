@@ -17,9 +17,6 @@ export class CategoryController {
 
     listByTournament = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            if (!req.userId) {
-                throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
-            }
             const tournamentId = req.params.tournamentId as string;
             const categories = await this.listCategoriesUseCase.execute(tournamentId);
             res.status(200).json({ categories: categories.map(toPublicCategory) });

@@ -19,7 +19,6 @@ export class TeamController {
 
     listByTournament = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            if (!req.userId) throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
             const tournamentId = req.params.tournamentId as string;
             const pagination = paginationQuerySchema.parse(req.query);
             const { items, total } = await this.listTeamsUseCase.execute(tournamentId, pagination);
