@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import type { AuthController } from './auth.controller.js';
-import { authRateLimiter } from '../../../shared/middlewares/rate-limiter.js';
+import { authRateLimiter, publicReadRateLimiter } from '../../../shared/middlewares/rate-limiter.js';
 import { createRequireAuth } from './middleware/require-auth.middleware.js';
 
 export function createAuthRouter(
@@ -14,5 +14,14 @@ export function createAuthRouter(
     router.post('/logout-all', requireAuth, controller.logoutAll);
     router.get('/me', requireAuth, controller.me);
 
+    return router;
+}
+
+export function createUserLookupRouter(
+    controller: AuthController,
+    requireAuth: ReturnType<typeof createRequireAuth>,
+): Router {
+    const router = Router();
+    router.get('/lookup', requireAuth, publicReadRateLimiter, controller.lookup);
     return router;
 }

@@ -13,3 +13,7 @@ export const loginSchema = z.object({
     email: z.string().email().max(255),
     password: z.string().min(1),
 });
+
+export const lookupUserQuerySchema = z.object({
+    email: z.string().email().max(255),
+});

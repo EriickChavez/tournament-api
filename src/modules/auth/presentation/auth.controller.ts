@@ -1,13 +1,14 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { RegisterUserUseCase } from '../application/use-cases/register-user.use-case.js';
 import type { LoginUserUseCase } from '../application/use-cases/login-user.use-case.js';
-import { registerSchema, loginSchema } from './schemas/auth.schemas.js';
+import { registerSchema, loginSchema, lookupUserQuerySchema } from './schemas/auth.schemas.js';
 import { clearSessionCookie, getSessionIdFromRequest, setSessionCookie } from './utils/session-cookie.js';
 import { toPublicUser } from './utils/public-user.js';
 import { LogoutUserUseCase } from '../application/use-cases/logout-user.use-case.js';
 import { AppError } from '../../../shared/errors/app-error.js';
 import { LogoutAllUseCase } from '../application/use-cases/logout-all-use-case.js';
 import { GetCurrentUserUseCase } from '../application/use-cases/get-current-user.use-case.js';
+import { LookupUserUseCase } from '../application/use-cases/lookup-user.use-case.js';
 
 export class AuthController {
     constructor(
@@ -16,6 +17,8 @@ export class AuthController {
         private readonly logoutUseCase: LogoutUserUseCase,
         private readonly logoutAllUseCase: LogoutAllUseCase,
         private readonly getCurrentUserUseCase: GetCurrentUserUseCase,
+        private readonly lookupUserUseCase: LookupUserUseCase,
+
     ) { }
 
     register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -73,6 +76,17 @@ export class AuthController {
                 throw new AppError(401, 'UNAUTHENTICATED', 'User not found.');
             }
             res.status(200).json({ user: toPublicUser(user) });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    lookup = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            if (!req.userId) throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
+            const { email } = lookupUserQuerySchema.parse(req.query);
+            const user = await this.lookupUserUseCase.execute({ email });
+            res.status(200).json({ user });
         } catch (error) {
             next(error);
         }

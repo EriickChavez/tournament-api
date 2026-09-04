@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '../../../../config/database.js';
-import { tournamentMembers } from './schema.js';
+import { roles, tournamentMembers } from './schema.js';
 import { TournamentMemberRepository } from '../../domain/repositories/tournaments-member.repository.js';
 import { TournamentMember, TournamentMemberWithUser } from '../../domain/entities/tournaments-member.entity.js';
 import { users } from '../../../auth/infrastructure/database/schema.js';
@@ -45,9 +45,11 @@ export class DrizzleTournamentMemberRepository implements TournamentMemberReposi
                 updatedAt: tournamentMembers.updatedAt,
                 displayName: users.displayName,
                 avatarUrl: users.avatarUrl,
+                roleName: roles.name,
             })
             .from(tournamentMembers)
             .innerJoin(users, eq(tournamentMembers.userId, users.id))
+            .innerJoin(roles, eq(tournamentMembers.roleId, roles.id))
             .where(eq(tournamentMembers.tournamentId, tournamentId));
         return rows;
     }

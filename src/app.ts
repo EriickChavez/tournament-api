@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import pinoHttp from 'pino-http';
 import { errorHandler } from './shared/errors/error-handler.js';
-import { authRouter } from './modules/auth/auth.module.js';
+import { authRouter, userLookupRouter } from './modules/auth/auth.module.js';
 import { healthRouter } from './shared/health/health.route.js';
 import { env } from './config/env.js';
 import { logger } from './shared/logging/logger.js';
@@ -47,6 +47,8 @@ app.use('/matches/:matchId/events', matchEventRouter);
 app.use('/match-events', standaloneMatchEventRouter);
 app.use('/tournaments/:tournamentId/categories/:categoryId', standingsRouter);
 app.use('/tournaments/:tournamentId/members', memberRouter);
+app.use('/users', userLookupRouter);
+
 
 app.use(errorHandler);
 

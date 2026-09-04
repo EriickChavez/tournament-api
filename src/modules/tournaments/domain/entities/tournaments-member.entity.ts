@@ -11,4 +11,5 @@ export interface TournamentMember {
 export interface TournamentMemberWithUser extends TournamentMember {
     displayName: string;
     avatarUrl: string | null;
+    roleName: string;
 }

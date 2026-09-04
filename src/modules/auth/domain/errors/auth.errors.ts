@@ -17,3 +17,9 @@ export class AccountSuspendedError extends AppError {
         super(403, 'ACCOUNT_SUSPENDED', 'This account has been suspended.');
     }
 }
+
+export class UserNotFoundError extends AppError {
+    constructor() {
+        super(404, 'USER_NOT_FOUND', 'No user found with that email.');
+    }
+}
