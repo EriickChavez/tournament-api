@@ -23,8 +23,13 @@ export class DrizzleTeamRepository implements TeamRepository {
     async findByTournamentId(
         tournamentId: string,
         pagination: PaginationParams,
+        filters?: { categoryId?: string },
     ): Promise<Paginated<Team>> {
-        const condition = eq(teams.tournamentId, tournamentId);
+        const conditions = [eq(teams.tournamentId, tournamentId)];
+        if (filters?.categoryId) {
+            conditions.push(eq(teams.categoryId, filters.categoryId));
+        }
+        const condition = and(...conditions);
 
         const [items, countRows] = await Promise.all([
             db
@@ -42,6 +47,7 @@ export class DrizzleTeamRepository implements TeamRepository {
 
         return { items, total: countRows[0]?.count ?? 0 };
     }
+
     async create(input: {
         tournamentId: string;
         categoryId: string;

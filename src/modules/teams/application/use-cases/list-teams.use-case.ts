@@ -10,10 +10,14 @@ export class ListTeamsUseCase {
         private readonly tournamentRepository: TournamentRepository,
     ) { }
 
-    async execute(tournamentId: string, pagination: PaginationParams): Promise<Paginated<Team>> {
+    async execute(
+        tournamentId: string,
+        pagination: PaginationParams,
+        filters?: { categoryId?: string },
+    ): Promise<Paginated<Team>> {
         const tournament = await this.tournamentRepository.findById(tournamentId);
         if (!tournament) throw new TournamentNotFoundError();
 
-        return this.teamRepository.findByTournamentId(tournamentId, pagination);
+        return this.teamRepository.findByTournamentId(tournamentId, pagination, filters);
     }
 }

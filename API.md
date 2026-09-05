@@ -1,12 +1,14 @@
-# tournament-api — API Reference
+# TOURNAMENT API
 
-API **privada (admin)** para administrar torneos deportivos multi-tenant.
+API **admin + pública** en el mismo servidor.
 
-- Autenticación: cookie de sesión `httpOnly` (no JWT)
+- Auth: cookie `httpOnly` `session_id` (no JWT)
 - Content-Type: `application/json`
-- Cliente: enviar cookies (`credentials: 'include'`)
+- Cliente con sesión: `credentials: 'include'`
+- Paginación (donde aplica): query `page` (default `1`), `limit` (default `20`, max `100`)
 
-**Errores (siempre el mismo shape):**
+**Error (shape fijo):**
+
 ```json
 {
   "error": {
@@ -17,243 +19,165 @@ API **privada (admin)** para administrar torneos deportivos multi-tenant.
 }
 ```
 
----
+**Seguridad:**
 
-## auth
-
-Todo el acceso al panel depende de una sesión en servidor. Sin esto no hay multi-usuario ni permisos por torneo.
-
-### `POST /auth/register`
-**Por qué:** da de alta administradores/staff en la plataforma. Crea usuario + sesión en un solo paso para no forzar un login extra tras registrarse.
-
-**Body:** `email`, `password` (8–128), `displayName`, `avatarUrl?`  
-**Auth:** no (rate limited)
+- **Público** = sin login (rate limit de lectura)
+- **Privado** = `requireAuth` (cookie de sesión válida)
 
 ---
 
-### `POST /auth/login`
-**Por qué:** recuperar sesión en otro dispositivo o tras logout. Protegido contra timing attacks y rate limited para limitar fuerza bruta.
+## Auth
 
-**Body:** `email`, `password`  
-**Auth:** no (rate limited)
-
----
-
-### `GET /auth/me`
-**Por qué:** el frontend necesita saber quién está logueado al arrancar (splash → home) sin guardar datos sensibles en localStorage.
-
-**Auth:** sí
+| Servicio    | Método y ruta           | Params / Query / Body                                              | Seguridad                 | Respuesta (éxito)                                 |
+| ----------- | ----------------------- | ------------------------------------------------------------------ | ------------------------- | ------------------------------------------------- |
+| Register    | `POST /auth/register`   | **Body:** `email`, `password` (8–128), `displayName`, `avatarUrl?` | Público (rate limit auth) | `201` — usuario + sesión (set-cookie)             |
+| Login       | `POST /auth/login`      | **Body:** `email`, `password`                                      | Público (rate limit auth) | `200` — usuario + sesión (set-cookie)             |
+| Logout      | `POST /auth/logout`     | — (usa cookie si existe)                                           | Público                   | `200` — limpia cookie / sesión                    |
+| Logout all  | `POST /auth/logout-all` | —                                                                  | Privado                   | `200` — cierra todas las sesiones del usuario     |
+| Me          | `GET /auth/me`          | —                                                                  | Privado                   | `200` — usuario de la sesión actual               |
+| Lookup user | `GET /users/lookup`     | **Query:** `email`                                                 | Privado                   | `200` — datos públicos del usuario (para invitar) |
 
 ---
 
-### `POST /auth/logout`
-**Por qué:** cerrar solo esta sesión (este navegador/dispositivo) sin tumbar otras pestañas o móviles del mismo usuario.
+## Health
 
-**Auth:** no (usa la cookie si existe)
-
----
-
-### `POST /auth/logout-all`
-**Por qué:** “cerrar sesión en todos lados” si hubo robo de cookie o cambio de contraseña futuro.
-
-**Auth:** sí
+| Servicio | Método y ruta | Params / Query / Body | Seguridad | Respuesta (éxito)                |
+| -------- | ------------- | --------------------- | --------- | -------------------------------- |
+| Health   | `GET /health` | —                     | Público   | `200` — app + DB OK (`SELECT 1`) |
 
 ---
 
-## health
+## Tournaments
 
-### `GET /health`
-**Por qué:** que load balancers, monitores y deploys sepan si la app **y** Postgres responden. No es un “ping vacío”: ejecuta `SELECT 1`.
+| Servicio     | Método y ruta             | Params / Query / Body                                                                | Seguridad                                           | Respuesta (éxito)                                                          |
+| ------------ | ------------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------- | -------------------------------------------------------------------------- |
+| List public  | `GET /tournaments/public` | **Query:** `page?`, `limit?`, `search?`                                              | Público                                             | `200` `{ tournaments, pagination }`                                        |
+| List mine    | `GET /tournaments`        | —                                                                                    | Privado                                             | `200` `{ tournaments }` (con `roleId`)                                     |
+| Get by param | `GET /tournaments/:id`    | **Params:** `id` = **UUID** o **slug**                                               | UUID → **Privado** (membership). Slug → **Público** | UUID: `200` `{ tournament }` + role. Slug: `200` `{ tournament }` sin role |
+| Create       | `POST /tournaments`       | **Body:** `name`, `subtitle?`, `description?`, `startDate?`, `endDate?`, `timezone?` | Privado                                             | `201` `{ tournament }` — creador = OWNER, slug auto                        |
+| Update       | `PATCH /tournaments/:id`  | **Params:** `id` (UUID). **Body:** campos opcionales del torneo                      | Privado (OWNER)                                     | `200` `{ tournament }` — si cambia `name`, regenera slug                   |
+| Delete       | `DELETE /tournaments/:id` | **Params:** `id` (UUID)                                                              | Privado (OWNER)                                     | `200` `{ message }`                                                        |
 
-**Auth:** no
+**Notas:**
 
----
-
-## tournaments
-
-Cada torneo es un tenant. Un usuario solo ve y administra los torneos donde es member.
-
-### `POST /tournaments`
-**Por qué:** punto de entrada del producto: crear un torneo nuevo. El creador queda automáticamente como **OWNER** (membership), para no dejar torneos huérfanos sin admin.
-
-**Body:** `name`, `subtitle?`, `description?`, `startDate?`, `endDate?`, `timezone?`  
-- `slug` se genera del nombre; si choca → `409` (no se inventa sufijo automático)  
-**Auth:** sí
+- Slug duplicado → `409 SLUG_ALREADY_IN_USE` (no se añade sufijo).
+- `GET /tournaments/public` está registrado **antes** de `/:id` (el slug `public` no se usa como detalle).
 
 ---
 
-### `GET /tournaments`
-**Por qué:** home del admin: “mis torneos”. Nunca lista todos los torneos de la plataforma (aislamiento multi-tenant).
+## Members
 
-**Auth:** sí
+| Servicio     | Método y ruta                                         | Params / Query / Body                                    | Seguridad                   | Respuesta (éxito)               |
+| ------------ | ----------------------------------------------------- | -------------------------------------------------------- | --------------------------- | ------------------------------- |
+| List members | `GET /tournaments/:tournamentId/members`              | **Params:** `tournamentId`. **Query:** `page?`, `limit?` | Privado (member del torneo) | `200` `{ members, pagination }` |
+| Invite       | `POST /tournaments/:tournamentId/members`             | **Body:** `userId` (uuid)                                | Privado                     | `201` `{ member }`              |
+| Update role  | `PATCH /tournaments/:tournamentId/members/:memberId`  | **Params:** `tournamentId`, `memberId`                   | Privado                     | `200` `{ member }`              |
+| Remove       | `DELETE /tournaments/:tournamentId/members/:memberId` | **Params:** `tournamentId`, `memberId`                   | Privado                     | `200` `{ message }`             |
 
----
+**Ejemplo de respuesta (list members):**
 
-### `PATCH /tournaments/:id`
-**Por qué:** corregir nombre, fechas, descripción. Solo **OWNER**. Si cambia `name`, se regenera `slug` (el frontend debe avisar que URLs públicas pueden romperse).
-
-**Auth:** sí (OWNER)
-
----
-
-### `DELETE /tournaments/:id`
-**Por qué:** archivar/eliminar un torneo que no se usará. Cascadas en DB limpian datos hijos según el schema.
-
-**Auth:** sí (según reglas del use case / OWNER)
-
----
-
-## categories
-
-Un torneo casi siempre se divide por edad o nivel (Sub-12, Sub-15, Libre…). Sin categorías no hay forma limpia de agrupar equipos, partidos y tablas.
-
-### `GET /tournaments/:tournamentId/categories`
-**Por qué:** armar el selector de categoría al crear equipos, jugadores o partidos, y listar la estructura del torneo.
-
-**Auth:** sí
-
----
-
-### `POST /tournaments/:tournamentId/categories`
-**Por qué:** definir esas divisiones al configurar el torneo. `minAge` / `maxAge` opcionales pero, si ambos vienen, `maxAge >= minAge`.
-
-**Body:** `title`, `minAge?`, `maxAge?`, `description?`, `order?`  
-**Auth:** sí (OWNER/ADMIN según use case)
+```json
+{
+  "members": [
+    {
+      "id": "uuid",
+      "tournamentId": "uuid",
+      "userId": "uuid",
+      "roleId": "uuid",
+      "status": "active",
+      "displayName": "Juan",
+      "avatarUrl": null,
+      "roleName": "OWNER"
+    }
+  ],
+  "pagination": { "page": 1, "limit": 20, "total": 42, "totalPages": 3 }
+}
+```
 
 ---
 
-### `PATCH /categories/:id`
-**Por qué:** renombrar, reordenar o ajustar rangos de edad sin recrear la categoría (y sin perder equipos/partidos ligados).
+## Categories
 
-**Auth:** sí
-
----
-
-### `DELETE /categories/:id`
-**Por qué:** quitar una categoría que se creó por error o ya no aplica (ojo con datos dependientes).
-
-**Auth:** sí
+| Servicio           | Método y ruta                                | Params / Query / Body                                             | Seguridad   | Respuesta (éxito)                       |
+| ------------------ | -------------------------------------------- | ----------------------------------------------------------------- | ----------- | --------------------------------------- |
+| List by tournament | `GET /tournaments/:tournamentId/categories`  | **Params:** `tournamentId`                                        | **Público** | `200` `{ categories }` (sin paginación) |
+| Create             | `POST /tournaments/:tournamentId/categories` | **Body:** `title`, `minAge?`, `maxAge?`, `description?`, `order?` | Privado     | `201` `{ category }`                    |
+| Update             | `PATCH /categories/:id`                      | **Params:** `id`. **Body:** campos opcionales                     | Privado     | `200` `{ category }`                    |
+| Delete             | `DELETE /categories/:id`                     | **Params:** `id`                                                  | Privado     | `200` `{ message }`                     |
 
 ---
 
-## teams
+## Teams
 
-Los participantes del torneo. Todo partido y casi toda estadística pivota sobre equipos.
+| Servicio           | Método y ruta                           | Params / Query / Body                                                          | Seguridad   | Respuesta (éxito)             |
+| ------------------ | --------------------------------------- | ------------------------------------------------------------------------------ | ----------- | ----------------------------- |
+| List by tournament | `GET /tournaments/:tournamentId/teams`  | **Params:** `tournamentId`. **Query:** `page?`, `limit?`, `categoryId?` (uuid) | **Público** | `200` `{ teams, pagination }` |
+| Create             | `POST /tournaments/:tournamentId/teams` | **Body:** `categoryId`, `name`, `abbreviation?`, `logoUrl?`                    | Privado     | `201` `{ team }`              |
+| Update             | `PATCH /teams/:id`                      | **Params:** `id`. **Body:** campos opcionales                                  | Privado     | `200` `{ team }`              |
+| Delete             | `DELETE /teams/:id`                     | **Params:** `id`                                                               | Privado     | `200` `{ message }`           |
 
-### `GET /tournaments/:tournamentId/teams`
-**Por qué:** listar planteles del torneo para UI de fixtures, alineaciones y tablas.
+**Ejemplos:**
 
-**Auth:** sí
+```http
+GET /tournaments/:tournamentId/teams
+GET /tournaments/:tournamentId/teams?page=1&limit=20
+GET /tournaments/:tournamentId/teams?categoryId=<uuid>
+GET /tournaments/:tournamentId/teams?categoryId=<uuid>&page=1&limit=20
+```
 
----
+**Reglas:**
 
-### `POST /tournaments/:tournamentId/teams`
-**Por qué:** inscribir un equipo. `categoryId` es obligatorio desde el alta: un equipo siempre pertenece a una categoría (no “flota” a nivel torneo).
-
-**Body:** `categoryId`, `name`, `abbreviation?`, `logoUrl?`  
-- Nombre único por torneo  
-**Auth:** sí
-
----
-
-### `PATCH /teams/:id`
-**Por qué:** corregir nombre, siglas, logo o mover de categoría si el reglamento lo permite.
-
-**Auth:** sí
-
----
-
-### `DELETE /teams/:id`
-**Por qué:** dar de baja un equipo que no participa.
-
-**Auth:** sí
+- `categoryId` obligatorio al crear.
+- Nombre único por torneo.
+- Sin `categoryId` en el listado → todos los equipos del torneo.
+- Con `categoryId` → solo equipos de esa categoría.
+- `categoryId` inválido (no uuid) → `400 VALIDATION_ERROR`.
 
 ---
 
-## players
+## Players
 
-Jugadores del torneo, siempre ligados a categoría y a un equipo al crearse.
+| Servicio           | Método y ruta                             | Params / Query / Body                                                                                    | Seguridad   | Respuesta (éxito)               |
+| ------------------ | ----------------------------------------- | -------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------- |
+| List by tournament | `GET /tournaments/:tournamentId/players`  | **Params:** `tournamentId`. **Query:** `page?`, `limit?`                                                 | **Privado** | `200` `{ players, pagination }` |
+| List by team       | `GET /teams/:teamId/players`              | **Params:** `teamId`. **Query:** `page?`, `limit?`                                                       | **Público** | `200` `{ players, pagination }` |
+| Create             | `POST /tournaments/:tournamentId/players` | **Body:** `categoryId`, `teamId`, `firstName`, `lastName`, `number`, `birthDate?`, `isCaptain?`, `role?` | Privado     | `201` `{ player }`              |
+| Update             | `PATCH /players/:id`                      | **Params:** `id`. **Body:** campos opcionales                                                            | Privado     | `200` `{ player }`              |
+| Delete             | `DELETE /players/:id`                     | **Params:** `id`                                                                                         | Privado     | `200` `{ message }`             |
 
-### `GET /tournaments/:tournamentId/players`
-**Por qué:** plantillas, dorsales, capitanes; base para eventos (quién marcó / quién vio tarjeta).
+**Reglas:**
 
-**Auth:** sí
-
----
-
-### `POST /tournaments/:tournamentId/players`
-**Por qué:** alta de jugador **y** asignación a equipo en el mismo paso (no se permiten jugadores “sueltos”). El número de camiseta es único en **todo el torneo**, no por equipo — evita confusiones en actas y rankings.
-
-**Body:** `categoryId`, `teamId`, `firstName`, `lastName`, `number`, `birthDate?`, `isCaptain?`, `role?`  
-**Auth:** sí
-
----
-
-### `PATCH /players/:id`
-**Por qué:** cambio de dorsal, traspaso de equipo, datos personales, capitán.
-
-**Auth:** sí
+- Al crear se asigna a un equipo (no hay jugadores sueltos).
+- Número de camiseta único en **todo el torneo** (no solo por equipo).
+- No hay listado público general de jugadores del torneo; solo por equipo.
 
 ---
 
-### `DELETE /players/:id`
-**Por qué:** baja de un jugador que no sigue en el torneo.
+## Matches
 
-**Auth:** sí
+| Servicio            | Método y ruta                                   | Params / Query / Body                                                                             | Seguridad   | Respuesta (éxito)                                         |
+| ------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------- | ----------- | --------------------------------------------------------- |
+| List by tournament  | `GET /tournaments/:tournamentId/matches`        | **Params:** `tournamentId`. **Query:** `page?`, `limit?`, `categoryId?`, `status?`                | **Público** | `200` `{ matches, pagination }`                           |
+| List public (alias) | `GET /tournaments/:tournamentId/matches/public` | Igual que arriba                                                                                  | **Público** | Igual (misma lógica)                                      |
+| Get by id           | `GET /matches/:id`                              | **Params:** `id`                                                                                  | **Público** | `200` `{ match }` (con equipos y categoría)               |
+| Create              | `POST /tournaments/:tournamentId/matches`       | **Body:** `categoryId`, `homeTeamId`, `awayTeamId`, `scheduledAt` (ISO 8601), `venue?`, `status?` | Privado     | `201` `{ match }`                                         |
+| Update              | `PATCH /matches/:id`                            | **Params:** `id`. **Body:** campos opcionales + `status?`                                         | Privado     | `200` `{ match }` — si pasa a `finished`, recalcula stats |
+| Delete              | `DELETE /matches/:id`                           | **Params:** `id`                                                                                  | Privado     | `200` `{ message }`                                       |
 
----
-
-## matches
-
-Calendario / fixtures. Sin partidos no hay resultados ni estadísticas.
-
-### `GET /tournaments/:tournamentId/matches`
-**Por qué:** ver el calendario del torneo. Filtros opcionales por categoría o estado para pantallas de “próximos” / “jugados”.
-
-**Query:** `categoryId?`, `status?` (`scheduled` | `in_progress` | `finished` | `cancelled` | `postponed`)  
-**Auth:** sí
+**`status`:** `scheduled` | `in_progress` | `finished` | `cancelled` | `postponed`
 
 ---
 
-### `POST /tournaments/:tournamentId/matches`
-**Por qué:** programar un enfrentamiento local vs visitante en una categoría, con fecha/hora y sede.
+## Match events
 
-**Body:** `categoryId`, `homeTeamId`, `awayTeamId`, `scheduledAt` (ISO 8601), `venue?`, `status?`  
-- Equipos distintos y de la misma categoría/torneo  
-**Auth:** sí
+| Servicio      | Método y ruta                   | Params / Query / Body | Seguridad   | Respuesta (éxito)                   |
+| ------------- | ------------------------------- | --------------------- | ----------- | ----------------------------------- |
+| List by match | `GET /matches/:matchId/events`  | **Params:** `matchId` | **Público** | `200` `{ events }` (sin paginación) |
+| Create        | `POST /matches/:matchId/events` | **Body:** ver abajo   | Privado     | `201` `{ event }`                   |
+| Delete        | `DELETE /match-events/:id`      | **Params:** `id`      | Privado     | `200` `{ message }`                 |
 
----
+**Body create event:**
 
-### `PATCH /matches/:id`
-**Por qué:** reprogramar, cambiar sede, corregir equipos **o** avanzar el estado del partido.  
-Cuando `status` pasa a `finished` (o deja de serlo), se **recalculan** posiciones, goleadores y tarjetas de esa categoría.
-
-**Auth:** sí
-
----
-
-### `DELETE /matches/:id`
-**Por qué:** quitar un fixture erróneo o cancelado de forma definitiva.
-
-**Auth:** sí
-
----
-
-## match-events
-
-Detalle de lo que pasó en el partido (goles, tarjetas, etc.). Es la **fuente de verdad** de marcadores y rankings; las tablas `posiciones` / `goleadores` / `tarjetas` son materializaciones.
-
-### `GET /matches/:matchId/events`
-**Por qué:** mostrar la crónica del partido (minuto a minuto) en el admin o en una ficha de resultado.
-
-**Auth:** sí
-
----
-
-### `POST /matches/:matchId/events`
-**Por qué:** registrar un gol, asistencia, tarjeta, cambio u otro evento mientras el partido se juega o al cargar el acta. Dispara recálculo de stats si el partido ya está `finished`.
-
-**Body:**
 ```json
 {
   "eventType": "gol",
@@ -264,66 +188,58 @@ Detalle de lo que pasó en el partido (goles, tarjetas, etc.). Es la **fuente de
   "description": "opcional"
 }
 ```
-- `eventType`: `gol` | `asistencia` | `tarjeta_amarilla` | `tarjeta_roja` | `cambio` | `otro`  
-- `teamId` debe ser local o visitante  
-- jugador/asistidor deben ser de ese equipo  
-- asistidor solo tiene sentido con `gol`  
 
-**Auth:** sí (OWNER/ADMIN)
+**`eventType`:** `gol` | `asistencia` | `tarjeta_amarilla` | `tarjeta_roja` | `cambio` | `otro`
+
+Al crear/borrar eventos de un partido `finished` se recalculan posiciones / goleadores / tarjetas.
 
 ---
 
-### `DELETE /match-events/:id`
-**Por qué:** corregir un evento mal cargado (gol anulado, tarjeta equivocada). También recalcula stats del partido asociado.
+## Standings (materializaciones)
 
-**Auth:** sí (OWNER/ADMIN)
+Base: `/tournaments/:tournamentId/categories/:categoryId`
 
----
+| Servicio    | Método y ruta         | Params / Query / Body                    | Seguridad   | Respuesta (éxito)                               |
+| ----------- | --------------------- | ---------------------------------------- | ----------- | ----------------------------------------------- |
+| Standings   | `GET .../standings`   | **Params:** `tournamentId`, `categoryId` | **Público** | `200` — tabla (PJ, PG, PE, PP, GF, GC, DG, pts) |
+| Top scorers | `GET .../top-scorers` | igual                                    | **Público** | `200` — ranking goles / asistencias             |
+| Cards       | `GET .../cards`       | igual                                    | **Público** | `200` — ranking tarjetas                        |
 
-## standings
-
-Lectura de las tablas ya materializadas. No se “editan” a mano: se recalculan desde partidos `finished` + eventos.
-
-Base path:
-`/tournaments/:tournamentId/categories/:categoryId`
-
-### `GET .../standings`
-**Por qué:** tabla de posiciones (PJ, PG, PE, PP, GF, GC, DG, puntos). Es lo que el admin y, más adelante, la API pública mostrarán como “la tabla”.
-
-**Auth:** no (router actual sin `requireAuth`)
+No se editan a mano: se recalculan desde partidos `finished` + eventos.
 
 ---
 
-### `GET .../top-scorers`
-**Por qué:** ranking de goleadores y asistencias por categoría, derivado de eventos `gol` (+ `assistedByPlayerId`).
+## Paginación
 
-**Auth:** no
+### Query params
 
----
+| Query   | Tipo         | Default | Límites                  | Descripción                  |
+| ------- | ------------ | ------- | ------------------------ | ---------------------------- |
+| `page`  | number (int) | `1`     | mínimo `1`               | Número de página (1-indexed) |
+| `limit` | number (int) | `20`    | mínimo `1`, máximo `100` | Ítems por página             |
 
-### `GET .../cards`
-**Por qué:** ranking de tarjetas amarillas/rojas por categoría, para disciplina y reportes.
+Si omites los params → defaults.  
+Valores inválidos (`page=0`, `limit=999`, `page=abc`) → `400 VALIDATION_ERROR`.
 
-**Auth:** no
+### Shape de respuesta
 
----
+```json
+{
+  "teams": [],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 47,
+    "totalPages": 3
+  }
+}
+```
 
-## Flujo recomendado
+| Campo        | Significado                                            |
+| ------------ | ------------------------------------------------------ |
+| `page`       | Página actual                                          |
+| `limit`      | Tamaño de página usado                                 |
+| `total`      | Total de registros que cumplen el filtro (sin paginar) |
+| `totalPages` | `ceil(total / limit)`; si `total === 0` → `0`          |
 
-1. Register / Login  
-2. Crear torneo  
-3. Crear categorías  
-4. Crear equipos (con categoría)  
-5. Crear jugadores (con equipo)  
-6. Crear partidos  
-7. Cargar eventos (goles, tarjetas…)  
-8. Marcar partido `finished` → se actualizan standings  
-9. Consultar `standings` / `top-scorers` / `cards`
-
----
-
-## Aún no expuesto por API
-
-- **Branding** (`torneo_branding`: logo/banner del torneo)  
-- **API pública** solo lectura (proyecto aparte)  
-- Verificación de email / recuperación de contraseña  
+La clave de la colección cambia según el recurso: `tournaments`, `teams`, `players`, `matches`, `members`.
