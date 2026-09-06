@@ -15,14 +15,15 @@ export class DrizzleUserRepository implements UserRepository {
         return row ?? null;
     }
 
-    async create(input: {
-        email: string;
-        passwordHash: string;
-        displayName: string;
-        avatarUrl: string | null;
-    }): Promise<User> {
+    async create(input: { email: string; passwordHash: string; displayName: string; avatarUrl: string | null }): Promise<User> {
         const [row] = await db.insert(users).values(input).returning();
         if (!row) throw new Error('Failed to create user');
+        return row;
+    }
+
+    async update(id: string, input: { displayName?: string | undefined; email?: string | undefined; isActive?: boolean | undefined }): Promise<User> {
+        const [row] = await db.update(users).set({ ...input, updatedAt: new Date() }).where(eq(users.id, id)).returning();
+        if (!row) throw new Error('Failed to update user');
         return row;
     }
 }

@@ -4,7 +4,12 @@ import type { LoginSuperAdminUseCase } from '../application/use-cases/login-supe
 import type { LogoutSuperAdminUseCase } from '../application/use-cases/logout-super-admin.use-case.js';
 import type { LogoutAllSuperAdminUseCase } from '../application/use-cases/logout-all-super-admin.use-case.js';
 import type { GetCurrentSuperAdminUseCase } from '../application/use-cases/get-current-super-admin.use-case.js';
+import type { ListAllUsersUseCase } from '../application/use-cases/list-all-users.use-case.js';
+import type { ListLookupOptionsUseCase } from '../application/use-cases/list-lookup-options.use-case.js';
+import type { CreateUserUseCase } from '../application/use-cases/create-user.use-case.js';
+import type { UpdateMemberUseCase } from '../application/use-cases/update-member.use-case.js';
 import { registerSuperAdminSchema, loginSuperAdminSchema } from './schemas/super-admin.schemas.js';
+import { createUserSchema, updateMemberSchema } from './schemas/member.schemas.js';
 import {
     clearSuperAdminSessionCookie,
     getSuperAdminSessionIdFromRequest,
@@ -12,9 +17,7 @@ import {
 } from './utils/super-admin-session-cookie.js';
 import { toPublicSuperAdmin } from './utils/public-super-admin.js';
 import { AppError } from '../../../shared/errors/app-error.js';
-import { buildPaginationMeta, paginationQuerySchema } from '../../../shared/utils/pagination.js';
-import { ListAllMembersUseCase } from '../application/use-cases/list-all-members.use-case.js';
-
+import { paginationQuerySchema, buildPaginationMeta } from '../../../shared/utils/pagination.js';
 
 export class SuperAdminController {
     constructor(
@@ -23,9 +26,13 @@ export class SuperAdminController {
         private readonly logoutUseCase: LogoutSuperAdminUseCase,
         private readonly logoutAllUseCase: LogoutAllSuperAdminUseCase,
         private readonly getCurrentSuperAdminUseCase: GetCurrentSuperAdminUseCase,
-        private readonly listAllMembersUseCase: ListAllMembersUseCase,
+        private readonly listAllUsersUseCase: ListAllUsersUseCase,
+        private readonly listLookupOptionsUseCase: ListLookupOptionsUseCase,
+        private readonly createUserUseCase: CreateUserUseCase,
+        private readonly updateMemberUseCase: UpdateMemberUseCase,
     ) { }
 
+    // Requiere requireSuperAuth: solo un superadmin ya logueado puede crear otro.
     register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const input = registerSuperAdminSchema.parse(req.body);
@@ -88,14 +95,39 @@ export class SuperAdminController {
         }
     };
 
-    listMembers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    listUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const pagination = paginationQuerySchema.parse(req.query);
-            const result = await this.listAllMembersUseCase.execute(pagination);
-            res.status(200).json({
-                items: result.items,
-                meta: buildPaginationMeta(pagination, result.total),
-            });
+            const result = await this.listAllUsersUseCase.execute(pagination);
+            res.status(200).json({ items: result.items, meta: buildPaginationMeta(pagination, result.total) });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    lookupOptions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            res.status(200).json(await this.listLookupOptionsUseCase.execute());
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    createUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const input = createUserSchema.parse(req.body);
+            const user = await this.createUserUseCase.execute(input);
+            res.status(201).json({ user });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    updateMember = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const input = updateMemberSchema.parse(req.body);
+            await this.updateMemberUseCase.execute(req.params.memberId as string, input);
+            res.status(204).send();
         } catch (error) {
             next(error);
         }

@@ -9,4 +9,5 @@ export interface UserRepository {
         displayName: string;
         avatarUrl: string | null;
     }): Promise<User>;
+    update(id: string, input: { displayName?: string | undefined; email?: string | undefined; isActive?: boolean | undefined }): Promise<User>;
 }

@@ -13,7 +13,10 @@ export function createSuperAdminRouter(
     router.post('/logout', controller.logout);
     router.post('/logout-all', requireSuperAuth, controller.logoutAll);
     router.get('/me', requireSuperAuth, controller.me);
-    router.get('/members', requireSuperAuth, controller.listMembers);
+    router.get('/users', requireSuperAuth, controller.listUsers);
+    router.get('/lookup-options', requireSuperAuth, controller.lookupOptions);
+    router.post('/users', requireSuperAuth, controller.createUser);
+    router.patch('/members/:memberId', requireSuperAuth, controller.updateMember);
 
     return router;
 }

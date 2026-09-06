@@ -11,9 +11,9 @@ import { createAuthRouter, createUserLookupRouter } from './presentation/auth.ro
 import { createRequireAuth } from './presentation/middleware/require-auth.middleware.js';
 import { LookupUserUseCase } from './application/use-cases/lookup-user.use-case.js';
 
-const userRepository = new DrizzleUserRepository();
+export const userRepository = new DrizzleUserRepository();
 const sessionRepository = new DrizzleSessionRepository();
-const passwordHasher = new Argon2PasswordHasher();
+export const passwordHasher = new Argon2PasswordHasher();
 
 const registerUseCase = new RegisterUserUseCase(userRepository, sessionRepository, passwordHasher);
 const loginUseCase = new LoginUserUseCase(userRepository, sessionRepository, passwordHasher);

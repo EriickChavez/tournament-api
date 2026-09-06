@@ -256,6 +256,7 @@ CREATE INDEX "idx_jugadores_torneo_categoria_id" ON "jugadores" USING btree ("to
 CREATE INDEX "idx_torneo_members_torneo" ON "torneo_members" USING btree ("torneo_id");
 CREATE INDEX "idx_torneo_members_user" ON "torneo_members" USING btree ("user_id");
 CREATE INDEX "idx_torneo_members_role" ON "torneo_members" USING btree ("role_id");
+CREATE UNIQUE INDEX users_email_lower_unique ON users (LOWER(email));
 COMMENT ON TABLE "torneos" IS 'Catálogo de torneos (multi-torneo).';
 COMMENT ON TABLE "categorias" IS 'Categorías por torneo (p. ej. edades).';
 COMMENT ON TABLE "equipos" IS 'Equipos participantes por torneo.';
@@ -283,3 +284,4 @@ COMMENT ON COLUMN "roles"."name" IS 'admin|staff|referee|viewer';
 COMMENT ON TABLE "torneo_members" IS 'Membership: quién puede administrar/participar en cada torneo.';
 COMMENT ON COLUMN "torneo_members"."status" IS 'active|invited|suspended';
 COMMENT ON TABLE "torneo_branding" IS 'Branding separado por torneo (evita crecimiento/mezcla en tabla principal).';
+
