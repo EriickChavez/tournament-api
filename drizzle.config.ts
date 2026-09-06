@@ -13,6 +13,7 @@ export default defineConfig({
         './src/modules/matches/infrastructure/database/schema.ts',
         './src/modules/match-events/infrastructure/database/schema.ts',
         './src/modules/standings/infrastructure/database/schema.ts',
+        './src/modules/superadmins/infrastructure/database/schema.ts',
     ],
     out: './drizzle',
     dialect: 'postgresql',
