@@ -8,8 +8,9 @@ import type { ListAllUsersUseCase } from '../application/use-cases/list-all-user
 import type { ListLookupOptionsUseCase } from '../application/use-cases/list-lookup-options.use-case.js';
 import type { CreateUserUseCase } from '../application/use-cases/create-user.use-case.js';
 import type { UpdateMemberUseCase } from '../application/use-cases/update-member.use-case.js';
+import type { DeleteUserUseCase } from '../application/use-cases/delete-user.use-case.js';
 import { registerSuperAdminSchema, loginSuperAdminSchema } from './schemas/super-admin.schemas.js';
-import { createUserSchema, updateMemberSchema } from './schemas/member.schemas.js';
+import { createUserSchema, updateMemberSchema, deleteUserParamsSchema } from './schemas/member.schemas.js';
 import {
     clearSuperAdminSessionCookie,
     getSuperAdminSessionIdFromRequest,
@@ -30,9 +31,9 @@ export class SuperAdminController {
         private readonly listLookupOptionsUseCase: ListLookupOptionsUseCase,
         private readonly createUserUseCase: CreateUserUseCase,
         private readonly updateMemberUseCase: UpdateMemberUseCase,
+        private readonly deleteUserUseCase: DeleteUserUseCase,
     ) { }
 
-    // Requiere requireSuperAuth: solo un superadmin ya logueado puede crear otro.
     register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const input = registerSuperAdminSchema.parse(req.body);
@@ -128,6 +129,16 @@ export class SuperAdminController {
             const input = updateMemberSchema.parse(req.body);
             await this.updateMemberUseCase.execute(req.params.memberId as string, input);
             res.status(204).send();
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    deleteUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const { userId } = deleteUserParamsSchema.parse(req.params);
+            const result = await this.deleteUserUseCase.execute(userId);
+            res.status(200).json({ deleted: true, tournamentsDeleted: result.tournamentsDeleted });
         } catch (error) {
             next(error);
         }

@@ -9,6 +9,7 @@ import { ListAllUsersUseCase } from './application/use-cases/list-all-users.use-
 import { ListLookupOptionsUseCase } from './application/use-cases/list-lookup-options.use-case.js';
 import { CreateUserUseCase } from './application/use-cases/create-user.use-case.js';
 import { UpdateMemberUseCase } from './application/use-cases/update-member.use-case.js';
+import { DeleteUserUseCase } from './application/use-cases/delete-user.use-case.js';
 import { SuperAdminController } from './presentation/super-admin.controller.js';
 import { createSuperAdminRouter } from './presentation/super-admin.routes.js';
 import { createRequireSuperAuth } from './presentation/middleware/require-super-auth.middleware.js';
@@ -31,6 +32,7 @@ const listAllUsersUseCase = new ListAllUsersUseCase();
 const listLookupOptionsUseCase = new ListLookupOptionsUseCase();
 const createUserUseCase = new CreateUserUseCase(userRepository, passwordHasher);
 const updateMemberUseCase = new UpdateMemberUseCase(userRepository);
+const deleteUserUseCase = new DeleteUserUseCase();
 
 const superAdminController = new SuperAdminController(
     registerUseCase,
@@ -42,6 +44,7 @@ const superAdminController = new SuperAdminController(
     listLookupOptionsUseCase,
     createUserUseCase,
     updateMemberUseCase,
+    deleteUserUseCase,
 );
 
 export const requireSuperAuth = createRequireSuperAuth(superAdminSessionRepository, superAdminRepository);

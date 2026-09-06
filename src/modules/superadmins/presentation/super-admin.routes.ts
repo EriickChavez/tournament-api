@@ -17,6 +17,7 @@ export function createSuperAdminRouter(
     router.get('/lookup-options', requireSuperAuth, controller.lookupOptions);
     router.post('/users', requireSuperAuth, controller.createUser);
     router.patch('/members/:memberId', requireSuperAuth, controller.updateMember);
+    router.delete('/users/:userId', requireSuperAuth, controller.deleteUser);
 
     return router;
 }
