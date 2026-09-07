@@ -1,6 +1,6 @@
 import { DrizzleTournamentRepository } from './infrastructure/database/drizzle-tournament.repository.js';
 import { DrizzleTournamentMemberRepository } from './infrastructure/database/drizzle-tournament-member.repository.js';
-import { SlugifyGenerator } from './infrastructure/slug/slugify-generator.js';
+
 import { CreateTournamentUseCase } from './application/use-cases/create-tournament.use-case.js';
 import { ListUserTournamentsUseCase } from './application/use-cases/list-user-tournaments.use-case.js';
 import { ListPublicTournamentsUseCase } from './application/use-cases/list-public-tournaments.use-case.js';
@@ -18,9 +18,12 @@ import { UpdateMemberRoleUseCase } from './application/use-cases/update-member-r
 import { RemoveMemberUseCase } from './application/use-cases/remove-member.use-case.js';
 import { MemberController } from './presentation/member.controller.js';
 import { createMemberRouter } from './presentation/member.routes.js';
+import { DrizzleBrandingRepository } from '../branding/infrastructure/database/drizzle-branding.repository.js';
+import { SlugifyGenerator } from './infrastructure/slug/slugify-generator.js';
 
 const tournamentRepository = new DrizzleTournamentRepository();
 const tournamentMemberRepository = new DrizzleTournamentMemberRepository();
+const brandingRepository = new DrizzleBrandingRepository();
 const slugGenerator = new SlugifyGenerator();
 
 const createTournamentUseCase = new CreateTournamentUseCase(
@@ -33,8 +36,12 @@ const listPublicTournamentsUseCase = new ListPublicTournamentsUseCase(tournament
 const getTournamentUseCase = new GetTournamentUseCase(
     tournamentRepository,
     tournamentMemberRepository,
+    brandingRepository,
 );
-const getPublicTournamentUseCase = new GetPublicTournamentUseCase(tournamentRepository);
+const getPublicTournamentUseCase = new GetPublicTournamentUseCase(
+    tournamentRepository,
+    brandingRepository,
+);
 const updateTournamentUseCase = new UpdateTournamentUseCase(
     tournamentRepository,
     tournamentMemberRepository,
