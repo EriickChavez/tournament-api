@@ -51,10 +51,10 @@ API **admin + pública** en el mismo servidor.
 
 | Servicio     | Método y ruta             | Params / Query / Body                                                                | Seguridad                                           | Respuesta (éxito)                                                          |
 | ------------ | ------------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------- | -------------------------------------------------------------------------- |
-| List public  | `GET /tournaments/public` | **Query:** `page?`, `limit?`, `search?`                                              | Público                                             | `200` `{ tournaments, pagination }`                                        |
-| List mine    | `GET /tournaments`        | —                                                                                    | Privado                                             | `200` `{ tournaments }` (con `roleId`)                                     |
-| Get by param | `GET /tournaments/:id`    | **Params:** `id` = **UUID** o **slug**                                               | UUID → **Privado** (membership). Slug → **Público** | UUID: `200` `{ tournament }` + role. Slug: `200` `{ tournament }` sin role |
-| Create       | `POST /tournaments`       | **Body:** `name`, `subtitle?`, `description?`, `startDate?`, `endDate?`, `timezone?` | Privado                                             | `201` `{ tournament }` — creador = OWNER, slug auto                        |
+| List public  | `GET /tournaments/public` | **Query:** `page?`, `limit?`, `search?`                                              | Público                                             | `200` `{ tournaments, pagination }` — cada item incluye `branding`         |
+| List mine    | `GET /tournaments`        | —                                                                                    | Privado                                             | `200` `{ tournaments }` (con `roleId` + `branding`)                        |
+| Get by param | `GET /tournaments/:id`    | **Params:** `id` = **UUID** o **slug**                                               | UUID → **Privado** (membership). Slug → **Público** | UUID: `200` `{ tournament }` + role + branding. Slug: público + branding   |
+| Create       | `POST /tournaments`       | **Body:** `name`, `subtitle?`, `description?`, `startDate?`, `endDate?`, `timezone?` | Privado                                             | `201` `{ tournament }` — creador = OWNER, slug auto (`branding: null`)     |
 | Update       | `PATCH /tournaments/:id`  | **Params:** `id` (UUID). **Body:** campos opcionales del torneo                      | Privado (OWNER)                                     | `200` `{ tournament }` — si cambia `name`, regenera slug                   |
 | Delete       | `DELETE /tournaments/:id` | **Params:** `id` (UUID)                                                              | Privado (OWNER)                                     | `200` `{ message }`                                                        |
 
@@ -62,6 +62,28 @@ API **admin + pública** en el mismo servidor.
 
 - Slug duplicado → `409 SLUG_ALREADY_IN_USE` (no se añade sufijo).
 - `GET /tournaments/public` está registrado **antes** de `/:id` (el slug `public` no se usa como detalle).
+- **Branding embebido:** listados y detalle de torneo incluyen `branding` (`null` si el torneo aún no tiene logo/banner).
+- Shape de `branding`: `{ tournamentId, logoUrl, bannerUrl, updatedAt }` — las URLs son paths relativos (ej. `/branding/<slug>/<slug>-logo.webp`). Prefijar con la base del API para cargar la imagen.
+
+---
+
+## Branding
+
+Logo y banner públicos de un torneo. Archivos convertidos a WebP en disco local (`public/branding/`) y servidos en estático bajo `/branding/*`.
+
+| Servicio | Método y ruta                      | Params / Query / Body                                                                 | Seguridad        | Respuesta (éxito)                                      |
+| -------- | ---------------------------------- | ------------------------------------------------------------------------------------- | ---------------- | ------------------------------------------------------ |
+| Get      | `GET /tournaments/:id/branding`    | **Params:** `id` (UUID del torneo)                                                    | **Público**      | `200` `{ branding }` — `404 BRANDING_NOT_FOUND` si no hay |
+| Upsert   | `PATCH /tournaments/:id/branding`  | **Params:** `id` (UUID). **Body:** `multipart/form-data` con `logo?` y/o `banner?`   | Privado (OWNER)  | `200` `{ branding }`                                   |
+
+**Notas:**
+
+- `logo` y `banner` son opcionales en el PATCH; se puede actualizar solo uno.
+- MIME permitidos: `image/png`, `image/jpeg`, `image/webp`.
+- Límites: logo máx. **2 MB**, banner máx. **5 MB**.
+- Al reemplazar, el archivo anterior se sobrescribe (mismo path por slug).
+- Errores frecuentes: `BRANDING_NOT_FOUND`, `INVALID_FILE_TYPE`, `FILE_TOO_LARGE`, `NO_FILE_PROVIDED`, `NOT_TOURNAMENT_OWNER`, `TOURNAMENT_NOT_FOUND`.
+- Las imágenes estáticas se sirven en `GET /branding/<slug>/<slug>-logo.webp` (y `-banner.webp`). Requiere `Cross-Origin-Resource-Policy: cross-origin` si el cliente está en otro origen.
 
 ---
 

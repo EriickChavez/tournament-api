@@ -110,6 +110,20 @@ _(No devuelve email ni password.)_
 
 ## Tournaments
 
+### Shape de `branding` (embebido)
+
+```json
+{
+  "tournamentId": "uuid",
+  "logoUrl": "/branding/copa-laguna-2026/copa-laguna-2026-logo.webp",
+  "bannerUrl": "/branding/copa-laguna-2026/copa-laguna-2026-banner.webp",
+  "updatedAt": "2026-09-06T20:00:00.000Z"
+}
+```
+
+Si el torneo aún no tiene branding → `"branding": null`.  
+Las URLs son paths relativos al host del API; el cliente debe prefijar `VITE_API_URL` (o equivalente).
+
 ### `GET /tournaments/public` → `200`
 
 ```json
@@ -123,7 +137,13 @@ _(No devuelve email ni password.)_
       "slug": "copa-laguna-2026",
       "startDate": "2026-06-01",
       "endDate": "2026-06-15",
-      "timezone": "America/Mexico_City"
+      "timezone": "America/Mexico_City",
+      "branding": {
+        "tournamentId": "uuid",
+        "logoUrl": "/branding/copa-laguna-2026/copa-laguna-2026-logo.webp",
+        "bannerUrl": "/branding/copa-laguna-2026/copa-laguna-2026-banner.webp",
+        "updatedAt": "2026-09-06T20:00:00.000Z"
+      }
     }
   ],
   "pagination": {
@@ -149,7 +169,8 @@ _(No devuelve email ni password.)_
       "startDate": "2026-06-01",
       "endDate": "2026-06-15",
       "timezone": "America/Mexico_City",
-      "roleId": "uuid"
+      "roleId": "uuid",
+      "branding": null
     }
   ]
 }
@@ -167,7 +188,13 @@ _(No devuelve email ni password.)_
     "slug": "copa-laguna-2026",
     "startDate": "2026-06-01",
     "endDate": "2026-06-15",
-    "timezone": "America/Mexico_City"
+    "timezone": "America/Mexico_City",
+    "branding": {
+      "tournamentId": "uuid",
+      "logoUrl": "/branding/copa-laguna-2026/copa-laguna-2026-logo.webp",
+      "bannerUrl": "/branding/copa-laguna-2026/copa-laguna-2026-banner.webp",
+      "updatedAt": "2026-09-06T20:00:00.000Z"
+    }
   }
 }
 ```
@@ -185,7 +212,13 @@ _(No devuelve email ni password.)_
     "startDate": "2026-06-01",
     "endDate": "2026-06-15",
     "timezone": "America/Mexico_City",
-    "roleId": "uuid"
+    "roleId": "uuid",
+    "branding": {
+      "tournamentId": "uuid",
+      "logoUrl": "/branding/copa-laguna-2026/copa-laguna-2026-logo.webp",
+      "bannerUrl": "/branding/copa-laguna-2026/copa-laguna-2026-banner.webp",
+      "updatedAt": "2026-09-06T20:00:00.000Z"
+    }
   }
 }
 ```
@@ -202,14 +235,15 @@ _(No devuelve email ni password.)_
     "slug": "copa-laguna-2026",
     "startDate": null,
     "endDate": null,
-    "timezone": "UTC"
+    "timezone": "UTC",
+    "branding": null
   }
 }
 ```
 
 ### `PATCH /tournaments/:id` → `200`
 
-Mismo shape que create (`tournament` sin `roleId`).
+Mismo shape que create (`tournament` sin `roleId`). `branding` puede venir `null` o con el valor actual si el mapper lo incluye en ese flujo.
 
 ### `DELETE /tournaments/:id` → `200`
 
@@ -218,6 +252,60 @@ Mismo shape que create (`tournament` sin `roleId`).
   "message": "Tournament deleted successfully"
 }
 ```
+
+---
+
+## Branding
+
+### `GET /tournaments/:id/branding` → `200`
+
+```json
+{
+  "branding": {
+    "tournamentId": "uuid",
+    "logoUrl": "/branding/copa-laguna-2026/copa-laguna-2026-logo.webp",
+    "bannerUrl": "/branding/copa-laguna-2026/copa-laguna-2026-banner.webp",
+    "updatedAt": "2026-09-06T20:00:00.000Z"
+  }
+}
+```
+
+### `GET /tournaments/:id/branding` → `404` (sin branding aún)
+
+```json
+{
+  "error": {
+    "code": "BRANDING_NOT_FOUND",
+    "message": "Tournament branding not found."
+  }
+}
+```
+
+### `PATCH /tournaments/:id/branding` → `200`
+
+`multipart/form-data` con campos opcionales `logo` y/o `banner` (archivos).
+
+```json
+{
+  "branding": {
+    "tournamentId": "uuid",
+    "logoUrl": "/branding/copa-laguna-2026/copa-laguna-2026-logo.webp",
+    "bannerUrl": "/branding/copa-laguna-2026/copa-laguna-2026-banner.webp",
+    "updatedAt": "2026-09-06T20:05:00.000Z"
+  }
+}
+```
+
+### Errores de branding
+
+| Código | HTTP | Cuándo |
+| ------ | ---- | ------ |
+| `BRANDING_NOT_FOUND` | `404` | GET y el torneo no tiene registro de branding |
+| `NO_FILE_PROVIDED` | `400` | PATCH sin `logo` ni `banner` |
+| `INVALID_FILE_TYPE` | `400` | MIME no permitido (solo png/jpeg/webp) |
+| `FILE_TOO_LARGE` | `400` | Logo > 2 MB o banner > 5 MB |
+| `NOT_TOURNAMENT_OWNER` | `403` | PATCH por un member que no es OWNER |
+| `TOURNAMENT_NOT_FOUND` | `404` | UUID de torneo inexistente |
 
 ---
 
