@@ -25,7 +25,11 @@ import { brandingRouter } from './modules/branding/branding.module.js';
 const app = express();
 
 app.use(pinoHttp({ logger }));
-app.use(helmet());
+app.use(
+    helmet({
+        crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+);
 app.use(
     cors({
         origin: env.CORS_ORIGIN,
