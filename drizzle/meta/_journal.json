@@ -78,6 +78,13 @@
       "when": 1788675492185,
       "tag": "0010_unique_email_lowercase",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1788749266523,
+      "tag": "0011_fluffy_mephistopheles",
+      "breakpoints": true
     }
   ]
 }

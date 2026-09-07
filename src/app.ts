@@ -1,3 +1,4 @@
+import { join } from 'node:path';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
@@ -19,6 +20,7 @@ import { matchRouter, tournamentMatchRouter } from './modules/matches/matches.mo
 import { matchEventRouter, standaloneMatchEventRouter } from './modules/match-events/match-events.module.js';
 import { standingsRouter } from './modules/standings/standings.module.js';
 import { superAdminRouter } from './modules/superadmins/superadmins.module.js';
+import { brandingRouter } from './modules/branding/branding.module.js';
 
 const app = express();
 
@@ -50,7 +52,9 @@ app.use('/match-events', standaloneMatchEventRouter);
 app.use('/tournaments/:tournamentId/categories/:categoryId', standingsRouter);
 app.use('/tournaments/:tournamentId/members', memberRouter);
 app.use('/users', userLookupRouter);
-// Superuser
+app.use('/tournaments/:id/branding', brandingRouter);
+app.use('/branding', express.static(join(process.cwd(), 'public', 'branding')));
+
 app.use('/superadmin', superAdminRouter);
 
 app.use(errorHandler);
