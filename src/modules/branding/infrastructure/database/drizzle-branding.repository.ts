@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { db } from '../../../../config/database.js';
 import { tournamentBranding } from './schema.js';
 import type { BrandingRepository } from '../../domain/repositories/branding.repository.js';
@@ -14,6 +14,14 @@ export class DrizzleBrandingRepository implements BrandingRepository {
         return row ?? null;
     }
 
+    async findByTournamentIds(tournamentIds: string[]): Promise<TournamentBranding[]> {
+        if (tournamentIds.length === 0) return [];
+        return db
+            .select()
+            .from(tournamentBranding)
+            .where(inArray(tournamentBranding.tournamentId, tournamentIds));
+    }
+
     async upsert(input: {
         tournamentId: string;
         logoUrl?: string | null | undefined;
@@ -22,8 +30,6 @@ export class DrizzleBrandingRepository implements BrandingRepository {
     }): Promise<TournamentBranding> {
         const existing = await this.findByTournamentId(input.tournamentId);
 
-        // Solo se pisa logoUrl/bannerUrl si vino en el input; si no, se conserva
-        // el valor existente (permite actualizar logo sin tocar banner y viceversa).
         const logoUrl = input.logoUrl !== undefined ? input.logoUrl : (existing?.logoUrl ?? null);
         const bannerUrl =
             input.bannerUrl !== undefined ? input.bannerUrl : (existing?.bannerUrl ?? null);

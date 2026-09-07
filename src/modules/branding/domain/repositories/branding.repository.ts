@@ -2,6 +2,7 @@ import type { TournamentBranding } from '../entities/branding.entity.js';
 
 export interface BrandingRepository {
     findByTournamentId(tournamentId: string): Promise<TournamentBranding | null>;
+    findByTournamentIds(tournamentIds: string[]): Promise<TournamentBranding[]>;
     upsert(input: {
         tournamentId: string;
         logoUrl?: string | null | undefined;

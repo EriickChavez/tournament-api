@@ -31,8 +31,14 @@ const createTournamentUseCase = new CreateTournamentUseCase(
     tournamentMemberRepository,
     slugGenerator,
 );
-const listUserTournamentsUseCase = new ListUserTournamentsUseCase(tournamentRepository);
-const listPublicTournamentsUseCase = new ListPublicTournamentsUseCase(tournamentRepository);
+const listUserTournamentsUseCase = new ListUserTournamentsUseCase(
+    tournamentRepository,
+    brandingRepository,
+);
+const listPublicTournamentsUseCase = new ListPublicTournamentsUseCase(
+    tournamentRepository,
+    brandingRepository,
+);
 const getTournamentUseCase = new GetTournamentUseCase(
     tournamentRepository,
     tournamentMemberRepository,
