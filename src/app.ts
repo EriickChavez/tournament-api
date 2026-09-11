@@ -21,6 +21,11 @@ import { matchEventRouter, standaloneMatchEventRouter } from './modules/match-ev
 import { standingsRouter } from './modules/standings/standings.module.js';
 import { superAdminRouter } from './modules/superadmins/superadmins.module.js';
 import { brandingRouter } from './modules/branding/branding.module.js';
+import { notFoundHandler } from './shared/errors/not-found.middleware.js';
+import {
+    adminAppSponsorRouter,
+    publicAppSponsorRouter,
+} from './modules/app-sponsors/app-sponsors.module.js';
 
 const app = express();
 
@@ -58,9 +63,12 @@ app.use('/tournaments/:tournamentId/members', memberRouter);
 app.use('/users', userLookupRouter);
 app.use('/tournaments/:id/branding', brandingRouter);
 app.use('/branding', express.static(join(process.cwd(), 'public', 'branding')));
+app.use('/sponsors', publicAppSponsorRouter);
+app.use('/uploads/app-sponsors', express.static(join(process.cwd(), 'public', 'app-sponsors')));
 
 app.use('/superadmin', superAdminRouter);
-
+app.use('/superadmin/app-sponsors', adminAppSponsorRouter);
+app.use(notFoundHandler);
 app.use(errorHandler);
 
 export default app;

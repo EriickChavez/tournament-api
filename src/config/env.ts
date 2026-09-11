@@ -4,7 +4,9 @@ const envSchema = z.object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     PORT: z.coerce.number().int().positive().default(3000),
     DATABASE_URL: z.string().url(),
-    CORS_ORIGIN: z.string().url().default('http://localhost:5173'),
+    CORS_ORIGIN: z
+        .string()
+        .transform((value) => value.split(',').map((origin) => origin.trim())),
     OWNER_ROLE_ID: z.string().uuid(),
     ADMIN_ROLE_ID: z.string().uuid(),
 });

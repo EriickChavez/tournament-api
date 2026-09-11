@@ -15,6 +15,7 @@ export default defineConfig({
         './src/modules/standings/infrastructure/database/schema.ts',
         './src/modules/superadmins/infrastructure/database/schema.ts',
         './src/modules/branding/infrastructure/database/schema.ts',
+        './src/modules/app-sponsors/infrastructure/database/schema.ts',
     ],
     out: './drizzle',
     dialect: 'postgresql',
