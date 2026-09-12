@@ -24,5 +24,6 @@ export function toPublicTournamentWithRole(
     return {
         ...toPublicTournament(tournament),
         roleId: tournament.roleId,
+        maxSponsors: tournament.maxSponsors,
     };
 }
