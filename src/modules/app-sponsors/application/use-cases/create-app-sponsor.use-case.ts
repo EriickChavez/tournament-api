@@ -7,6 +7,7 @@ import {
     AmbiguousPdfInputError,
     InvalidDateRangeError,
     LogoRequiredError,
+    WebsiteAndPdfConflictError,
 } from '../../domain/errors/app-sponsor.errors.js';
 
 export class CreateAppSponsorUseCase {
@@ -40,6 +41,11 @@ export class CreateAppSponsorUseCase {
         }
         if (input.startDate && input.endDate && input.endDate < input.startDate) {
             throw new InvalidDateRangeError();
+        }
+        // Validado ANTES de subir archivos: evita dejar un logo/pdf huérfano
+        // en storage si la creación termina rechazada por este conflicto.
+        if (input.websiteUrl && (input.pdf || input.pdfUrl)) {
+            throw new WebsiteAndPdfConflictError();
         }
 
         let logoUrl: string;

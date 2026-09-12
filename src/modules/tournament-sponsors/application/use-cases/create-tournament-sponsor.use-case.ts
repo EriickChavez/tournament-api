@@ -5,14 +5,14 @@ import type { TournamentSponsorRepository } from '../../domain/repositories/tour
 import type { FileStorage } from '../ports/file-storage.port.js';
 import type { TournamentRepository } from '../../../tournaments/domain/repositories/tournaments.repository.js';
 import type { TournamentMemberRepository } from '../../../tournaments/domain/repositories/tournaments-member.repository.js';
-import { TournamentNotFoundError } from '../../../tournaments/domain/errors/tournaments.errors.js';
+import { TournamentNotFoundError, NotTournamentOwnerError } from '../../../tournaments/domain/errors/tournaments.errors.js';
 import {
     AmbiguousLogoInputError,
     AmbiguousPdfInputError,
     InvalidDateRangeError,
     LogoRequiredError,
-    NotTournamentAdminError,
     SponsorLimitReachedError,
+    WebsiteAndPdfConflictError,
 } from '../../domain/errors/tournament-sponsor.errors.js';
 
 export class CreateTournamentSponsorUseCase {
@@ -45,11 +45,8 @@ export class CreateTournamentSponsorUseCase {
             input.tournamentId,
             input.userId,
         );
-        if (
-            !member ||
-            (member.roleId !== env.OWNER_ROLE_ID && member.roleId !== env.ADMIN_ROLE_ID)
-        ) {
-            throw new NotTournamentAdminError();
+        if (!member || member.roleId !== env.OWNER_ROLE_ID) {
+            throw new NotTournamentOwnerError();
         }
 
         const currentCount = await this.sponsorRepository.countByTournament(input.tournamentId);
@@ -62,6 +59,11 @@ export class CreateTournamentSponsorUseCase {
         if (input.pdf && input.pdfUrl) throw new AmbiguousPdfInputError();
         if (input.startDate && input.endDate && input.endDate < input.startDate) {
             throw new InvalidDateRangeError();
+        }
+        // Validado ANTES de subir archivos: evita dejar un logo/pdf huérfano
+        // en storage si la creación termina rechazada por este conflicto.
+        if (input.websiteUrl && (input.pdf || input.pdfUrl)) {
+            throw new WebsiteAndPdfConflictError();
         }
 
         let logoUrl: string;

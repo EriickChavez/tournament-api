@@ -28,6 +28,16 @@ export class AmbiguousPdfInputError extends AppError {
     }
 }
 
+export class WebsiteAndPdfConflictError extends AppError {
+    constructor() {
+        super(
+            400,
+            'WEBSITE_AND_PDF_CONFLICT',
+            'A sponsor cannot have both a website URL and a PDF at the same time.',
+        );
+    }
+}
+
 export class InvalidFileTypeError extends AppError {
     constructor(field: string, allowed: readonly string[]) {
         super(400, 'INVALID_FILE_TYPE', `Field "${field}" must be one of: ${allowed.join(', ')}.`);
@@ -53,11 +63,5 @@ export class SponsorLimitReachedError extends AppError {
             'SPONSOR_LIMIT_REACHED',
             `This tournament has reached its sponsor limit (${max}). Contact the platform admin to increase it.`,
         );
-    }
-}
-
-export class NotTournamentAdminError extends AppError {
-    constructor() {
-        super(403, 'NOT_TOURNAMENT_ADMIN', 'Only the tournament OWNER or ADMIN can manage sponsors.');
     }
 }

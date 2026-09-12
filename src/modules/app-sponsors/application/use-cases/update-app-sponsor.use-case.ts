@@ -7,6 +7,7 @@ import {
     AmbiguousPdfInputError,
     AppSponsorNotFoundError,
     InvalidDateRangeError,
+    WebsiteAndPdfConflictError,
 } from '../../domain/errors/app-sponsor.errors.js';
 
 export class UpdateAppSponsorUseCase {
@@ -50,6 +51,20 @@ export class UpdateAppSponsorUseCase {
         const effectiveEndDate = input.endDate !== undefined ? input.endDate : sponsor.endDate;
         if (effectiveStartDate && effectiveEndDate && effectiveEndDate < effectiveStartDate) {
             throw new InvalidDateRangeError();
+        }
+
+        // Validado ANTES de tocar storage: si esto revienta después de subir/borrar
+        // archivos, el sponsor queda con una referencia rota a un archivo ya borrado.
+        const effectiveWebsiteUrl =
+            input.websiteUrl !== undefined ? input.websiteUrl : sponsor.websiteUrl;
+        const willHavePdf =
+            input.pdf !== undefined || input.pdfUrl !== undefined
+                ? true
+                : input.removePdf
+                    ? false
+                    : sponsor.pdfUrl !== null;
+        if (effectiveWebsiteUrl && willHavePdf) {
+            throw new WebsiteAndPdfConflictError();
         }
 
         let logoUrl: string | undefined;

@@ -3,9 +3,9 @@ import type { TournamentSponsorRepository } from '../../domain/repositories/tour
 import type { FileStorage } from '../ports/file-storage.port.js';
 import type { TournamentMemberRepository } from '../../../tournaments/domain/repositories/tournaments-member.repository.js';
 import {
-    NotTournamentAdminError,
     TournamentSponsorNotFoundError,
 } from '../../domain/errors/tournament-sponsor.errors.js';
+import { NotTournamentOwnerError } from '../../../tournaments/domain/errors/tournaments.errors.js';
 
 export class DeleteTournamentSponsorUseCase {
     constructor(
@@ -28,11 +28,8 @@ export class DeleteTournamentSponsorUseCase {
             input.tournamentId,
             input.userId,
         );
-        if (
-            !member ||
-            (member.roleId !== env.OWNER_ROLE_ID && member.roleId !== env.ADMIN_ROLE_ID)
-        ) {
-            throw new NotTournamentAdminError();
+        if (!member || member.roleId !== env.OWNER_ROLE_ID) {
+            throw new NotTournamentOwnerError();
         }
 
         if (sponsor.logoStorageKey) {

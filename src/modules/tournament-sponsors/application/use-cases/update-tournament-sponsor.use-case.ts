@@ -8,9 +8,10 @@ import {
     AmbiguousLogoInputError,
     AmbiguousPdfInputError,
     InvalidDateRangeError,
-    NotTournamentAdminError,
     TournamentSponsorNotFoundError,
+    WebsiteAndPdfConflictError,
 } from '../../domain/errors/tournament-sponsor.errors.js';
+import { NotTournamentOwnerError } from '../../../tournaments/domain/errors/tournaments.errors.js';
 
 export class UpdateTournamentSponsorUseCase {
     constructor(
@@ -45,11 +46,8 @@ export class UpdateTournamentSponsorUseCase {
             input.tournamentId,
             input.userId,
         );
-        if (
-            !member ||
-            (member.roleId !== env.OWNER_ROLE_ID && member.roleId !== env.ADMIN_ROLE_ID)
-        ) {
-            throw new NotTournamentAdminError();
+        if (!member || member.roleId !== env.OWNER_ROLE_ID) {
+            throw new NotTournamentOwnerError();
         }
 
         if (input.logo && input.logoUrl) throw new AmbiguousLogoInputError();
@@ -63,6 +61,20 @@ export class UpdateTournamentSponsorUseCase {
         const effectiveEnd = input.endDate !== undefined ? input.endDate : sponsor.endDate;
         if (effectiveStart && effectiveEnd && effectiveEnd < effectiveStart) {
             throw new InvalidDateRangeError();
+        }
+
+        // Validado ANTES de tocar storage: si esto revienta después de subir/borrar
+        // archivos, el sponsor queda con una referencia rota a un archivo ya borrado.
+        const effectiveWebsiteUrl =
+            input.websiteUrl !== undefined ? input.websiteUrl : sponsor.websiteUrl;
+        const willHavePdf =
+            input.pdf !== undefined || input.pdfUrl !== undefined
+                ? true
+                : input.removePdf
+                    ? false
+                    : sponsor.pdfUrl !== null;
+        if (effectiveWebsiteUrl && willHavePdf) {
+            throw new WebsiteAndPdfConflictError();
         }
 
         let logoUrl: string | undefined;

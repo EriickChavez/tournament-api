@@ -28,6 +28,16 @@ export class AmbiguousPdfInputError extends AppError {
     }
 }
 
+export class WebsiteAndPdfConflictError extends AppError {
+    constructor() {
+        super(
+            400,
+            'WEBSITE_AND_PDF_CONFLICT',
+            'A sponsor cannot have both a website URL and a PDF at the same time.',
+        );
+    }
+}
+
 export class InvalidFileTypeError extends AppError {
     constructor(field: string, allowed: readonly string[]) {
         super(400, 'INVALID_FILE_TYPE', `Field "${field}" must be one of: ${allowed.join(', ')}.`);
