@@ -3,7 +3,7 @@ import type { SuperAdminSessionRepository } from '../../domain/repositories/supe
 import type { PasswordHasher } from '../../../auth/application/ports/password-hasher.port.js';
 import type { SuperAdmin } from '../../domain/entities/super-admin.entity.js';
 import type { SuperAdminSession } from '../../domain/entities/super-admin-session.entity.js';
-import { InvalidSuperAdminCredentialsError, SuperAdminAccountSuspendedError } from '../../domain/domain/errors/super-admin.errors.js';
+import { InvalidSuperAdminCredentialsError, SuperAdminAccountSuspendedError } from '../../domain/errors/super-admin.errors.js';
 
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 

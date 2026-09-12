@@ -1,0 +1,63 @@
+import { AppError } from '../../../../shared/errors/app-error.js';
+
+export class TournamentSponsorNotFoundError extends AppError {
+    constructor() {
+        super(404, 'TOURNAMENT_SPONSOR_NOT_FOUND', 'Tournament sponsor not found.');
+    }
+}
+
+export class LogoRequiredError extends AppError {
+    constructor() {
+        super(400, 'LOGO_REQUIRED', 'Either a logo file or a logo URL must be provided.');
+    }
+}
+
+export class AmbiguousLogoInputError extends AppError {
+    constructor() {
+        super(400, 'AMBIGUOUS_LOGO_INPUT', 'Provide either a logo file or a logo URL, not both.');
+    }
+}
+
+export class AmbiguousPdfInputError extends AppError {
+    constructor() {
+        super(
+            400,
+            'AMBIGUOUS_PDF_INPUT',
+            'Provide at most one of: a pdf file, a pdf URL, or removePdf.',
+        );
+    }
+}
+
+export class InvalidFileTypeError extends AppError {
+    constructor(field: string, allowed: readonly string[]) {
+        super(400, 'INVALID_FILE_TYPE', `Field "${field}" must be one of: ${allowed.join(', ')}.`);
+    }
+}
+
+export class FileTooLargeError extends AppError {
+    constructor(field: string, maxSizeMb: number) {
+        super(400, 'FILE_TOO_LARGE', `Field "${field}" exceeds the maximum size of ${maxSizeMb}MB.`);
+    }
+}
+
+export class InvalidDateRangeError extends AppError {
+    constructor() {
+        super(400, 'INVALID_DATE_RANGE', 'endDate must be on or after startDate.');
+    }
+}
+
+export class SponsorLimitReachedError extends AppError {
+    constructor(max: number) {
+        super(
+            403,
+            'SPONSOR_LIMIT_REACHED',
+            `This tournament has reached its sponsor limit (${max}). Contact the platform admin to increase it.`,
+        );
+    }
+}
+
+export class NotTournamentAdminError extends AppError {
+    constructor() {
+        super(403, 'NOT_TOURNAMENT_ADMIN', 'Only the tournament OWNER or ADMIN can manage sponsors.');
+    }
+}

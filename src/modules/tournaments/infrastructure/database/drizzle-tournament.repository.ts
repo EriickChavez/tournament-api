@@ -27,6 +27,7 @@ export class DrizzleTournamentRepository implements TournamentRepository {
                 startDate: tournaments.startDate,
                 endDate: tournaments.endDate,
                 timezone: tournaments.timezone,
+                maxSponsors: tournaments.maxSponsors,
                 createdByUserId: tournaments.createdByUserId,
                 createdAt: tournaments.createdAt,
                 updatedByUserId: tournaments.updatedByUserId,
@@ -44,7 +45,6 @@ export class DrizzleTournamentRepository implements TournamentRepository {
         pagination: PaginationParams,
         search?: string | undefined,
     ): Promise<Paginated<Tournament>> {
-        // ilike = LIKE case-insensitive de Postgres. Sin search, no filtramos nada.
         const condition = search ? ilike(tournaments.name, `%${search}%`) : sql`true`;
 
         const [items, countRows] = await Promise.all([
@@ -95,6 +95,16 @@ export class DrizzleTournamentRepository implements TournamentRepository {
             .where(eq(tournaments.id, id))
             .returning();
         if (!row) throw new Error('Failed to update tournament');
+        return row;
+    }
+
+    async updateMaxSponsors(id: string, maxSponsors: number): Promise<Tournament> {
+        const [row] = await db
+            .update(tournaments)
+            .set({ maxSponsors, updatedAt: new Date() })
+            .where(eq(tournaments.id, id))
+            .returning();
+        if (!row) throw new Error('Failed to update max_sponsors');
         return row;
     }
 

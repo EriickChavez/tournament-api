@@ -33,5 +33,6 @@ export interface TournamentRepository {
             updatedByUserId: string;
         },
     ): Promise<Tournament>;
+    updateMaxSponsors(id: string, maxSponsors: number): Promise<Tournament>;
     delete(id: string, userId: string): Promise<void>;
 }

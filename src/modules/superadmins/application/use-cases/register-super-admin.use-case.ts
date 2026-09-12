@@ -1,7 +1,7 @@
 import type { SuperAdminRepository } from '../../domain/repositories/super-admin.repository.js';
 import type { PasswordHasher } from '../../../auth/application/ports/password-hasher.port.js';
 import type { SuperAdmin } from '../../domain/entities/super-admin.entity.js';
-import { SuperAdminEmailAlreadyInUseError } from '../../domain/domain/errors/super-admin.errors.js';
+import { SuperAdminEmailAlreadyInUseError } from '../../domain/errors/super-admin.errors.js';
 
 export class RegisterSuperAdminUseCase {
     constructor(

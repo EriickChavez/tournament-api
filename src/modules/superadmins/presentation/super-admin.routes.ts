@@ -8,6 +8,7 @@ export function createSuperAdminRouter(
     requireSuperAuth: ReturnType<typeof createRequireSuperAuth>,
 ): Router {
     const router = Router();
+
     router.post('/register', requireSuperAuth, controller.register);
     router.post('/login', authRateLimiter, controller.login);
     router.post('/logout', controller.logout);
@@ -18,6 +19,13 @@ export function createSuperAdminRouter(
     router.post('/users', requireSuperAuth, controller.createUser);
     router.patch('/members/:memberId', requireSuperAuth, controller.updateMember);
     router.delete('/users/:userId', requireSuperAuth, controller.deleteUser);
+
+    router.patch(
+        '/tournaments/:id/max-sponsors',
+        requireSuperAuth,
+        controller.updateTournamentMaxSponsors,
+    );
+    router.get('/tournaments', requireSuperAuth, controller.listTournaments);
 
     return router;
 }

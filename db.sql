@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS "torneos" (
 	"fecha_inicio" date,
 	"fecha_fin" date,
 	"zona_horaria" varchar(60) NOT NULL DEFAULT 'America/Mexico_City',
+	"max_sponsors" integer NOT NULL DEFAULT 5,
 	"created_by_user_id" uuid,
 	"created_at" timestamp with time zone NOT NULL DEFAULT 'now()',
 	"updated_by_user_id" uuid,

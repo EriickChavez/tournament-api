@@ -26,6 +26,7 @@ import {
     adminAppSponsorRouter,
     publicAppSponsorRouter,
 } from './modules/app-sponsors/app-sponsors.module.js';
+import { tournamentSponsorRouter } from './modules/tournament-sponsors/tournament-sponsors.module.js';
 
 const app = express();
 
@@ -65,6 +66,13 @@ app.use('/tournaments/:id/branding', brandingRouter);
 app.use('/branding', express.static(join(process.cwd(), 'public', 'branding')));
 app.use('/sponsors', publicAppSponsorRouter);
 app.use('/uploads/app-sponsors', express.static(join(process.cwd(), 'public', 'app-sponsors')));
+
+// Tournament sponsors
+app.use('/tournaments/:tournamentId/sponsors', tournamentSponsorRouter);
+app.use(
+    '/uploads/tournament-sponsors',
+    express.static(join(process.cwd(), 'public', 'tournament-sponsors')),
+);
 
 app.use('/superadmin', superAdminRouter);
 app.use('/superadmin/app-sponsors', adminAppSponsorRouter);

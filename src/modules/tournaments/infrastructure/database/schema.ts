@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, date, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, date, timestamp, integer } from 'drizzle-orm/pg-core';
 import { users } from '../../../auth/infrastructure/database/schema.js';
 
 export const tournaments = pgTable('torneos', {
@@ -10,6 +10,7 @@ export const tournaments = pgTable('torneos', {
     startDate: date('fecha_inicio'),
     endDate: date('fecha_fin'),
     timezone: varchar('zona_horaria', { length: 60 }).notNull().default('America/Mexico_City'),
+    maxSponsors: integer('max_sponsors').notNull().default(0),
     createdByUserId: uuid('created_by_user_id').references(() => users.id),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedByUserId: uuid('updated_by_user_id').references(() => users.id),

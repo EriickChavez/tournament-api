@@ -9,7 +9,7 @@ import type { ListLookupOptionsUseCase } from '../application/use-cases/list-loo
 import type { CreateUserUseCase } from '../application/use-cases/create-user.use-case.js';
 import type { UpdateMemberUseCase } from '../application/use-cases/update-member.use-case.js';
 import type { DeleteUserUseCase } from '../application/use-cases/delete-user.use-case.js';
-import { registerSuperAdminSchema, loginSuperAdminSchema } from './schemas/super-admin.schemas.js';
+import { registerSuperAdminSchema, loginSuperAdminSchema, updateTournamentMaxSponsorsParamsSchema, updateTournamentMaxSponsorsBodySchema, listTournamentsQuerySchema } from './schemas/super-admin.schemas.js';
 import { createUserSchema, updateMemberSchema, deleteUserParamsSchema } from './schemas/member.schemas.js';
 import {
     clearSuperAdminSessionCookie,
@@ -17,8 +17,11 @@ import {
     setSuperAdminSessionCookie,
 } from './utils/super-admin-session-cookie.js';
 import { toPublicSuperAdmin } from './utils/public-super-admin.js';
+import { toAdminTournamentSummary } from './utils/admin-tournament-summary.js';
 import { AppError } from '../../../shared/errors/app-error.js';
 import { paginationQuerySchema, buildPaginationMeta } from '../../../shared/utils/pagination.js';
+import type { UpdateTournamentMaxSponsorsUseCase } from '../application/use-cases/update-tournament-max-sponsors.use-case.js';
+import type { ListAllTournamentsUseCase } from '../application/use-cases/list-all-tournaments.use-case.js';
 
 export class SuperAdminController {
     constructor(
@@ -32,6 +35,8 @@ export class SuperAdminController {
         private readonly createUserUseCase: CreateUserUseCase,
         private readonly updateMemberUseCase: UpdateMemberUseCase,
         private readonly deleteUserUseCase: DeleteUserUseCase,
+        private readonly updateTournamentMaxSponsorsUseCase: UpdateTournamentMaxSponsorsUseCase,
+        private readonly listAllTournamentsUseCase: ListAllTournamentsUseCase,
     ) { }
 
     register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -139,6 +144,54 @@ export class SuperAdminController {
             const { userId } = deleteUserParamsSchema.parse(req.params);
             const result = await this.deleteUserUseCase.execute(userId);
             res.status(200).json({ deleted: true, tournamentsDeleted: result.tournamentsDeleted });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    updateTournamentMaxSponsors = async (
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ): Promise<void> => {
+        try {
+            if (!req.superAdminId) {
+                throw new AppError(401, 'UNAUTHENTICATED', 'No superadmin session found.');
+            }
+
+            const { id } = updateTournamentMaxSponsorsParamsSchema.parse(req.params);
+            const { maxSponsors } = updateTournamentMaxSponsorsBodySchema.parse(req.body);
+
+            const tournament = await this.updateTournamentMaxSponsorsUseCase.execute({
+                tournamentId: id,
+                maxSponsors,
+            });
+
+            res.status(200).json({
+                tournament: {
+                    id: tournament.id,
+                    name: tournament.name,
+                    maxSponsors: tournament.maxSponsors,
+                },
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    listTournaments = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            if (!req.superAdminId) {
+                throw new AppError(401, 'UNAUTHENTICATED', 'No superadmin session found.');
+            }
+
+            const { search, ...pagination } = listTournamentsQuerySchema.parse(req.query);
+            const result = await this.listAllTournamentsUseCase.execute(pagination, search);
+
+            res.status(200).json({
+                items: result.items.map(toAdminTournamentSummary),
+                meta: buildPaginationMeta(pagination, result.total),
+            });
         } catch (error) {
             next(error);
         }

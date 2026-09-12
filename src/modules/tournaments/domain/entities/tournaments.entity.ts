@@ -7,6 +7,7 @@ export interface Tournament {
     startDate: string | null;
     endDate: string | null;
     timezone: string;
+    maxSponsors: number;
     createdByUserId: string | null;
     createdAt: Date;
     updatedByUserId: string | null;
