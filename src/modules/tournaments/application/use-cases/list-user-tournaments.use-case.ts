@@ -11,7 +11,16 @@ export class ListUserTournamentsUseCase {
 
     async execute(
         userId: string,
-    ): Promise<Array<Tournament & { roleId: string; branding: TournamentBranding | null }>> {
+    ): Promise<
+        Array<
+            Tournament & {
+                roleId: string;
+                playerCount: number;
+                teamCount: number;
+                branding: TournamentBranding | null;
+            }
+        >
+    > {
         const tournaments = await this.tournamentRepository.findAllForUser(userId);
         if (tournaments.length === 0) return [];
 

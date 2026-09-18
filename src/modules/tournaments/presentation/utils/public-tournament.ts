@@ -19,11 +19,18 @@ export function toPublicTournament(
 }
 
 export function toPublicTournamentWithRole(
-    tournament: Tournament & { roleId: string; branding?: TournamentBranding | null },
+    tournament: Tournament & {
+        roleId: string;
+        branding?: TournamentBranding | null;
+        playerCount?: number;
+        teamCount?: number;
+    },
 ) {
     return {
         ...toPublicTournament(tournament),
         roleId: tournament.roleId,
         maxSponsors: tournament.maxSponsors,
+        ...(tournament.playerCount !== undefined ? { playerCount: tournament.playerCount } : {}),
+        ...(tournament.teamCount !== undefined ? { teamCount: tournament.teamCount } : {}),
     };
 }

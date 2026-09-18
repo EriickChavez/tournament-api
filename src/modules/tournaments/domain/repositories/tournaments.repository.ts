@@ -4,7 +4,9 @@ import type { PaginationParams, Paginated } from '../../../../shared/utils/pagin
 export interface TournamentRepository {
     findById(id: string): Promise<Tournament | null>;
     findBySlug(slug: string): Promise<Tournament | null>;
-    findAllForUser(userId: string): Promise<Array<Tournament & { roleId: string }>>;
+    findAllForUser(
+        userId: string,
+    ): Promise<Array<Tournament & { roleId: string; playerCount: number; teamCount: number }>>;
     /** Listado público paginado, con búsqueda opcional por nombre. */
     findAllPaginated(
         pagination: PaginationParams,

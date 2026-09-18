@@ -1,6 +1,8 @@
 import { desc, eq, ilike, sql } from 'drizzle-orm';
 import { db } from '../../../../config/database.js';
 import { tournaments, tournamentMembers } from './schema.js';
+import { teams } from '../../../teams/infrastructure/database/schema.js';
+import { players } from '../../../players/infrastructure/database/schema.js';
 import { TournamentRepository } from '../../domain/repositories/tournaments.repository.js';
 import { Tournament } from '../../domain/entities/tournaments.entity.js';
 import { toOffset, type PaginationParams, type Paginated } from '../../../../shared/utils/pagination.js';
@@ -16,7 +18,9 @@ export class DrizzleTournamentRepository implements TournamentRepository {
         return row ?? null;
     }
 
-    async findAllForUser(userId: string): Promise<Array<Tournament & { roleId: string }>> {
+    async findAllForUser(
+        userId: string,
+    ): Promise<Array<Tournament & { roleId: string; playerCount: number; teamCount: number }>> {
         const rows = await db
             .select({
                 id: tournaments.id,
@@ -33,6 +37,12 @@ export class DrizzleTournamentRepository implements TournamentRepository {
                 updatedByUserId: tournaments.updatedByUserId,
                 updatedAt: tournaments.updatedAt,
                 roleId: tournamentMembers.roleId,
+                // Subqueries correlacionadas: un solo roundtrip a la DB, sin
+                // N+1 y sin duplicar filas (evita el problema de hacer JOIN
+                // directo con equipos/jugadores, que multiplicaría el
+                // resultado por cada combinación).
+                playerCount: sql<number>`(select count(*)::int from ${players} where ${players.tournamentId} = ${tournaments.id})`,
+                teamCount: sql<number>`(select count(*)::int from ${teams} where ${teams.tournamentId} = ${tournaments.id})`,
             })
             .from(tournamentMembers)
             .innerJoin(tournaments, eq(tournamentMembers.tournamentId, tournaments.id))
