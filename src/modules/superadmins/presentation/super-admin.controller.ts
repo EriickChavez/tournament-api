@@ -10,7 +10,7 @@ import type { CreateUserUseCase } from '../application/use-cases/create-user.use
 import type { UpdateMemberUseCase } from '../application/use-cases/update-member.use-case.js';
 import type { DeleteUserUseCase } from '../application/use-cases/delete-user.use-case.js';
 import { registerSuperAdminSchema, loginSuperAdminSchema, updateTournamentMaxSponsorsParamsSchema, updateTournamentMaxSponsorsBodySchema, listTournamentsQuerySchema } from './schemas/super-admin.schemas.js';
-import { createUserSchema, updateMemberSchema, deleteUserParamsSchema } from './schemas/member.schemas.js';
+import { createUserSchema, updateMemberSchema, deleteUserParamsSchema, memberParamsSchema } from './schemas/member.schemas.js';
 import {
     clearSuperAdminSessionCookie,
     getSuperAdminSessionIdFromRequest,
@@ -131,8 +131,9 @@ export class SuperAdminController {
 
     updateMember = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
+            const { memberId } = memberParamsSchema.parse(req.params);
             const input = updateMemberSchema.parse(req.body);
-            await this.updateMemberUseCase.execute(req.params.memberId as string, input);
+            await this.updateMemberUseCase.execute(memberId, input);
             res.status(204).send();
         } catch (error) {
             next(error);

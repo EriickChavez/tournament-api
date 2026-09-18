@@ -4,7 +4,7 @@ import { DrizzleSuperAdminRepository } from '../modules/superadmins/infrastructu
 import { Argon2PasswordHasher } from '../modules/auth/infrastructure/security/argon2-password-hasher.js';
 
 async function seedSuperAdmin(): Promise<void> {
-    const email = process.env.SUPERADMIN_EMAIL;
+    const email = process.env.SUPERADMIN_EMAIL?.trim().toLowerCase();
     const password = process.env.SUPERADMIN_PASSWORD;
     const displayName = process.env.SUPERADMIN_DISPLAY_NAME ?? 'Super Admin';
 

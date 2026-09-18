@@ -2,7 +2,10 @@ import rateLimit from 'express-rate-limit';
 
 export const authRateLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    limit: 10,
+    limit: 15,
+    // Solo cuentan los intentos fallidos (4xx/5xx): un login correcto no debe
+    // gastar el cupo, si no te bloqueas a ti mismo probando en desarrollo.
+    skipSuccessfulRequests: true,
     standardHeaders: true,
     legacyHeaders: false,
     message: {

@@ -86,6 +86,37 @@ export class DrizzleTournamentRepository implements TournamentRepository {
         return row;
     }
 
+    async createWithOwner(
+        input: {
+            name: string;
+            subtitle: string | null;
+            description: string | null;
+            slug: string;
+            startDate?: string | null | undefined;
+            endDate?: string | null | undefined;
+            timezone?: string | undefined;
+            createdByUserId: string;
+        },
+        ownerRoleId: string,
+    ): Promise<Tournament> {
+        return db.transaction(async (tx) => {
+            const [tournament] = await tx.insert(tournaments).values(input).returning();
+            if (!tournament) throw new Error('Failed to create tournament');
+
+            const [member] = await tx
+                .insert(tournamentMembers)
+                .values({
+                    tournamentId: tournament.id,
+                    userId: input.createdByUserId,
+                    roleId: ownerRoleId,
+                })
+                .returning();
+            if (!member) throw new Error('Failed to create owner member');
+
+            return tournament;
+        });
+    }
+
     async update(
         id: string,
         input: {

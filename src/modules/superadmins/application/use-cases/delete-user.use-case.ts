@@ -8,6 +8,8 @@ import { categories } from '../../../categories/infrastructure/database/schema.j
 import { matches } from '../../../matches/infrastructure/database/schema.js';
 import { matchEvents } from '../../../match-events/infrastructure/database/schema.js';
 import { teamPlayers } from '../../../players/infrastructure/database/schema.js';
+import { tournamentBranding } from '../../../branding/infrastructure/database/schema.js';
+import { tournamentSponsors } from '../../../tournament-sponsors/infrastructure/database/schema.js';
 
 export interface DeleteUserResult {
     tournamentsDeleted: number;
@@ -80,6 +82,18 @@ export class DeleteUserUseCase {
                 .update(teamPlayers)
                 .set({ createdByUserId: null, updatedByUserId: null })
                 .where(or(eq(teamPlayers.createdByUserId, userId), eq(teamPlayers.updatedByUserId, userId)));
+
+            // torneo_branding y patrocinadores_torneo también tienen FK de auditoría a
+            // users (sin cascade): si no se desvinculan, el DELETE final revienta.
+            await tx
+                .update(tournamentBranding)
+                .set({ createdByUserId: null, updatedByUserId: null })
+                .where(or(eq(tournamentBranding.createdByUserId, userId), eq(tournamentBranding.updatedByUserId, userId)));
+
+            await tx
+                .update(tournamentSponsors)
+                .set({ createdByUserId: null, updatedByUserId: null })
+                .where(or(eq(tournamentSponsors.createdByUserId, userId), eq(tournamentSponsors.updatedByUserId, userId)));
 
             await tx.delete(tournamentMembers).where(eq(tournamentMembers.userId, userId));
             await tx.delete(users).where(eq(users.id, userId));

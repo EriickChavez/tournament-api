@@ -28,7 +28,6 @@ const slugGenerator = new SlugifyGenerator();
 
 const createTournamentUseCase = new CreateTournamentUseCase(
     tournamentRepository,
-    tournamentMemberRepository,
     slugGenerator,
 );
 const listUserTournamentsUseCase = new ListUserTournamentsUseCase(

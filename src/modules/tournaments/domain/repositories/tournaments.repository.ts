@@ -22,6 +22,24 @@ export interface TournamentRepository {
         timezone?: string | undefined;
         createdByUserId: string;
     }): Promise<Tournament>;
+    /**
+     * Crea el torneo y su miembro OWNER en una sola transacción. Si el alta del
+     * miembro falla (por ejemplo, un role_id inexistente), se revierte también
+     * el torneo en vez de dejarlo huérfano bloqueando el slug.
+     */
+    createWithOwner(
+        input: {
+            name: string;
+            subtitle: string | null;
+            description: string | null;
+            slug: string;
+            startDate?: string | null | undefined;
+            endDate?: string | null | undefined;
+            timezone?: string | undefined;
+            createdByUserId: string;
+        },
+        ownerRoleId: string,
+    ): Promise<Tournament>;
     update(
         id: string,
         input: {

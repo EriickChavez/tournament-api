@@ -2,7 +2,10 @@ import type { Request, Response, NextFunction } from 'express';
 import type { SuperAdminSessionRepository } from '../../domain/repositories/super-admin-session.repository.js';
 import type { SuperAdminRepository } from '../../domain/repositories/super-admin.repository.js';
 import { AppError } from '../../../../shared/errors/app-error.js';
-import { getSuperAdminSessionIdFromRequest } from '../utils/super-admin-session-cookie.js';
+import {
+    getSuperAdminSessionIdFromRequest,
+    setSuperAdminSessionCookie,
+} from '../utils/super-admin-session-cookie.js';
 
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const RENEWAL_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000;
@@ -51,12 +54,7 @@ export function createRequireSuperAuth(
             if (session.expiresAt.getTime() - now < RENEWAL_THRESHOLD_MS) {
                 const newExpiresAt = new Date(now + SESSION_TTL_MS);
                 await sessionRepository.updateExpiresAt(session.id, newExpiresAt);
-                res.cookie('superadmin_session_id', session.id, {
-                    httpOnly: true,
-                    secure: req.secure,
-                    sameSite: 'lax',
-                    expires: newExpiresAt,
-                });
+                setSuperAdminSessionCookie(res, { ...session, expiresAt: newExpiresAt });
             }
 
             req.superAdminId = superAdmin.id;

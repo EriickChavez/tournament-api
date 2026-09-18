@@ -15,6 +15,7 @@ import {
 /** Puerto mínimo (mismo shape que en match-events). */
 export interface MatchStatsRecalculator {
     recalculateForMatch(matchId: string): Promise<void>;
+    recalculateForTeams(tournamentId: string, categoryId: string, teamIds: string[]): Promise<void>;
 }
 
 function isOwnerOrAdmin(roleId: string): boolean {
@@ -111,6 +112,15 @@ export class UpdateMatchUseCase {
 
         if (becameOrLeftFinished || structuralChangeOnFinished || updated.status === 'finished') {
             await this.matchStatsRecalculator.recalculateForMatch(input.matchId);
+        }
+
+        // recalculateForMatch solo ve los equipos/categoría NUEVOS. Si un partido finished
+        // cambió de equipos o categoría, los anteriores se quedarían con puntos fantasma.
+        if (structuralChangeOnFinished) {
+            await this.matchStatsRecalculator.recalculateForTeams(match.tournamentId, match.categoryId, [
+                match.homeTeamId,
+                match.awayTeamId,
+            ]);
         }
 
         return updated;

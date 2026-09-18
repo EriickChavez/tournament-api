@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import type { SessionRepository } from '../../domain/repositories/session.repository.js';
 import type { UserRepository } from '../../domain/repositories/user.repository.js';
 import { AppError } from '../../../../shared/errors/app-error.js';
+import { setSessionCookie } from '../utils/session-cookie.js';
 
 const COOKIE_NAME = 'session_id';
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -52,12 +53,7 @@ export function createRequireAuth(
             if (session.expiresAt.getTime() - now < RENEWAL_THRESHOLD_MS) {
                 const newExpiresAt = new Date(now + SESSION_TTL_MS);
                 await sessionRepository.updateExpiresAt(session.id, newExpiresAt);
-                res.cookie(COOKIE_NAME, session.id, {
-                    httpOnly: true,
-                    secure: req.secure,
-                    sameSite: 'lax',
-                    expires: newExpiresAt,
-                });
+                setSessionCookie(res, { ...session, expiresAt: newExpiresAt });
             }
 
             req.userId = user.id;

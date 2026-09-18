@@ -1,6 +1,5 @@
 import { env } from '../../../../config/env.js';
 import type { TournamentRepository } from '../../domain/repositories/tournaments.repository.js';
-import type { TournamentMemberRepository } from '../../domain/repositories/tournaments-member.repository.js';
 import type { SlugGenerator } from '../ports/slug-generator.port.js';
 import { SlugAlreadyInUseError } from '../../domain/errors/tournaments.errors.js';
 import type { Tournament } from '../../domain/entities/tournaments.entity.js';
@@ -8,7 +7,6 @@ import type { Tournament } from '../../domain/entities/tournaments.entity.js';
 export class CreateTournamentUseCase {
     constructor(
         private readonly tournamentRepository: TournamentRepository,
-        private readonly tournamentMemberRepository: TournamentMemberRepository,
         private readonly slugGenerator: SlugGenerator,
     ) { }
 
@@ -26,23 +24,21 @@ export class CreateTournamentUseCase {
         const existing = await this.tournamentRepository.findBySlug(slug);
         if (existing) throw new SlugAlreadyInUseError(slug);
 
-        const tournament = await this.tournamentRepository.create({
-            name: input.name,
-            subtitle: input.subtitle ?? null,
-            description: input.description ?? null,
-            slug,
-            startDate: input.startDate ?? null,
-            endDate: input.endDate ?? null,
-            timezone: input.timezone,
-            createdByUserId: input.userId,
-        });
-
-        await this.tournamentMemberRepository.create({
-            tournamentId: tournament.id,
-            userId: input.userId,
-            roleId: env.OWNER_ROLE_ID,
-        });
-
-        return tournament;
+        // El torneo y su miembro OWNER se crean en una sola transacción: antes
+        // eran dos escrituras sueltas y si la segunda fallaba quedaba un torneo
+        // huérfano que bloqueaba el slug en el siguiente intento.
+        return this.tournamentRepository.createWithOwner(
+            {
+                name: input.name,
+                subtitle: input.subtitle ?? null,
+                description: input.description ?? null,
+                slug,
+                startDate: input.startDate ?? null,
+                endDate: input.endDate ?? null,
+                timezone: input.timezone,
+                createdByUserId: input.userId,
+            },
+            env.OWNER_ROLE_ID,
+        );
     }
 }

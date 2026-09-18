@@ -6,6 +6,10 @@ export const createUserSchema = z.object({
     password: z.string().min(8).max(128),
 });
 
+export const memberParamsSchema = z.object({
+    memberId: z.string().uuid(),
+});
+
 export const deleteUserParamsSchema = z.object({
     userId: z.string().uuid(),
 });
@@ -13,6 +17,6 @@ export const deleteUserParamsSchema = z.object({
 export const updateMemberSchema = z.object({
     roleId: z.string().uuid().optional(),
     displayName: z.string().min(1).max(120).optional(),
-    email: z.string().email().optional(),
+    email: z.string().trim().toLowerCase().email().max(255).optional(),
     isActive: z.boolean().optional(),
 });

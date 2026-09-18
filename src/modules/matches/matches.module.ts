@@ -33,7 +33,11 @@ const updateMatchUseCase = new UpdateMatchUseCase(
     teamRepository,
     recalculateMatchStatsService,
 );
-const deleteMatchUseCase = new DeleteMatchUseCase(matchRepository, tournamentMemberRepository);
+const deleteMatchUseCase = new DeleteMatchUseCase(
+    matchRepository,
+    tournamentMemberRepository,
+    recalculateMatchStatsService,
+);
 const listMatchesUseCase = new ListMatchesUseCase(
     matchRepository,
     tournamentRepository,

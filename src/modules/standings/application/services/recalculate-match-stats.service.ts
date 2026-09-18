@@ -26,9 +26,26 @@ export class RecalculateMatchStatsService {
         const match = await this.matchRepository.findById(matchId);
         if (!match) return;
 
-        await this.recalculateTeamStanding(match.tournamentId, match.categoryId, match.homeTeamId);
-        await this.recalculateTeamStanding(match.tournamentId, match.categoryId, match.awayTeamId);
-        await this.recalculateTopScorersAndCards(match.tournamentId, match.categoryId);
+        await this.recalculateForTeams(match.tournamentId, match.categoryId, [
+            match.homeTeamId,
+            match.awayTeamId,
+        ]);
+    }
+
+    /**
+     * Recalcula equipos concretos + rankings de una categoría sin necesitar que el
+     * partido exista todavía/aún: sirve para partidos recién borrados o para los
+     * equipos/categoría ANTERIORES de un partido que cambió.
+     */
+    async recalculateForTeams(
+        tournamentId: string,
+        categoryId: string,
+        teamIds: string[],
+    ): Promise<void> {
+        for (const teamId of new Set(teamIds)) {
+            await this.recalculateTeamStanding(tournamentId, categoryId, teamId);
+        }
+        await this.recalculateTopScorersAndCards(tournamentId, categoryId);
     }
 
     private async recalculateTeamStanding(
