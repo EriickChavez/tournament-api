@@ -12,7 +12,9 @@ import { TournamentController } from './presentation/tournament.controller.js';
 import { createTournamentRouter } from './presentation/tournament.routes.js';
 import { requireAuth } from '../auth/auth.module.js';
 import { DrizzleUserRepository } from '../auth/infrastructure/database/drizzle-user.repository.js';
+import { Argon2PasswordHasher } from '../auth/infrastructure/security/argon2-password-hasher.js';
 import { InviteMemberUseCase } from './application/use-cases/invite-member.use-case.js';
+import { CreateMemberAccountUseCase } from './application/use-cases/create-member-account.use-case.js';
 import { ListMembersUseCase } from './application/use-cases/list-members.use-case.js';
 import { UpdateMemberRoleUseCase } from './application/use-cases/update-member-role.use-case.js';
 import { RemoveMemberUseCase } from './application/use-cases/remove-member.use-case.js';
@@ -68,11 +70,18 @@ const tournamentController = new TournamentController(
 );
 
 const userRepository = new DrizzleUserRepository();
+const memberAccountPasswordHasher = new Argon2PasswordHasher();
 
 const inviteMemberUseCase = new InviteMemberUseCase(
     tournamentRepository,
     tournamentMemberRepository,
     userRepository,
+);
+const createMemberAccountUseCase = new CreateMemberAccountUseCase(
+    tournamentRepository,
+    tournamentMemberRepository,
+    userRepository,
+    memberAccountPasswordHasher,
 );
 const listMembersUseCase = new ListMembersUseCase(tournamentMemberRepository);
 const updateMemberRoleUseCase = new UpdateMemberRoleUseCase(tournamentMemberRepository);
@@ -80,6 +89,7 @@ const removeMemberUseCase = new RemoveMemberUseCase(tournamentMemberRepository);
 
 const memberController = new MemberController(
     inviteMemberUseCase,
+    createMemberAccountUseCase,
     listMembersUseCase,
     updateMemberRoleUseCase,
     removeMemberUseCase,

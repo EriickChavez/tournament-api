@@ -8,6 +8,7 @@ export function createMemberRouter(
 ): Router {
     const router = Router({ mergeParams: true });
     router.post('/', requireAuth, controller.invite);
+    router.post('/create-account', requireAuth, controller.createAccount);
     router.get('/', requireAuth, controller.list);
     router.patch('/:memberId', requireAuth, controller.updateRole);
     router.delete('/:memberId', requireAuth, controller.remove);

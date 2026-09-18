@@ -1,15 +1,21 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { InviteMemberUseCase } from '../application/use-cases/invite-member.use-case.js';
+import type { CreateMemberAccountUseCase } from '../application/use-cases/create-member-account.use-case.js';
 import type { ListMembersUseCase } from '../application/use-cases/list-members.use-case.js';
 import type { UpdateMemberRoleUseCase } from '../application/use-cases/update-member-role.use-case.js';
 import type { RemoveMemberUseCase } from '../application/use-cases/remove-member.use-case.js';
-import { inviteMemberSchema, listMembersQuerySchema } from './schemas/member.schemas.js';
+import {
+    inviteMemberSchema,
+    listMembersQuerySchema,
+} from './schemas/member.schemas.js';
 import { AppError } from '../../../shared/errors/app-error.js';
 import { buildPaginationMeta } from '../../../shared/utils/pagination.js';
+import { createMemberAccountSchema } from '../../superadmins/presentation/schemas/member.schemas.js';
 
 export class MemberController {
     constructor(
         private readonly inviteMemberUseCase: InviteMemberUseCase,
+        private readonly createMemberAccountUseCase: CreateMemberAccountUseCase,
         private readonly listMembersUseCase: ListMembersUseCase,
         private readonly updateMemberRoleUseCase: UpdateMemberRoleUseCase,
         private readonly removeMemberUseCase: RemoveMemberUseCase,
@@ -23,6 +29,23 @@ export class MemberController {
                 tournamentId: req.params.tournamentId as string,
                 requesterId: req.userId,
                 targetUserId: userId,
+            });
+            res.status(201).json({ member });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    createAccount = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            if (!req.userId) throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
+            const { email, displayName, password } = createMemberAccountSchema.parse(req.body);
+            const member = await this.createMemberAccountUseCase.execute({
+                tournamentId: req.params.tournamentId as string,
+                requesterId: req.userId,
+                email,
+                displayName,
+                password,
             });
             res.status(201).json({ member });
         } catch (error) {

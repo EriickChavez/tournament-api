@@ -1,3 +1,4 @@
+import { paginationQuerySchema } from '../../../../shared/utils/pagination.js';
 import { z } from 'zod';
 
 export const createUserSchema = z.object({
@@ -19,4 +20,16 @@ export const updateMemberSchema = z.object({
     displayName: z.string().min(1).max(120).optional(),
     email: z.string().trim().toLowerCase().email().max(255).optional(),
     isActive: z.boolean().optional(),
+});
+
+export const inviteMemberSchema = z.object({
+    userId: z.string().uuid(),
+});
+
+export const listMembersQuerySchema = paginationQuerySchema;
+
+export const createMemberAccountSchema = z.object({
+    email: z.string().trim().toLowerCase().email().max(255),
+    displayName: z.string().trim().min(1).max(120),
+    password: z.string().min(8).max(128),
 });
