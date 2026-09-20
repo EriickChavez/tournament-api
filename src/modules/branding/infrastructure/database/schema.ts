@@ -2,9 +2,9 @@ import { pgTable, uuid, varchar, timestamp } from 'drizzle-orm/pg-core';
 import { users } from '../../../auth/infrastructure/database/schema.js';
 import { tournaments } from '../../../tournaments/infrastructure/database/schema.js';
 
-export const tournamentBranding = pgTable('torneo_branding', {
+export const tournamentBranding = pgTable('tournament_branding', {
     id: uuid('id').primaryKey().defaultRandom(),
-    tournamentId: uuid('torneo_id')
+    tournamentId: uuid('tournament_id')
         .notNull()
         .unique()
         .references(() => tournaments.id, { onDelete: 'cascade' }),

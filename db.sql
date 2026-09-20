@@ -1,310 +1,349 @@
--- Catálogo de torneos (multi-torneo).
-CREATE TABLE IF NOT EXISTS "torneos" (
-	"id" uuid NOT NULL,
-	"nombre" varchar(200) NOT NULL,
-	"subtitulo" varchar(255),
-	"descripcion" text,
-	"slug" varchar(220) NOT NULL UNIQUE,
-	"fecha_inicio" date,
-	"fecha_fin" date,
-	"zona_horaria" varchar(60) NOT NULL DEFAULT 'America/Mexico_City',
-	"max_sponsors" integer NOT NULL DEFAULT 5,
-	"created_by_user_id" uuid,
-	"created_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	"updated_by_user_id" uuid,
-	"updated_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	PRIMARY KEY ("id")
-);
--- Categorías por torneo (p. ej. edades).
-CREATE TABLE IF NOT EXISTS "categorias" (
-	"id" uuid NOT NULL,
-	"torneo_id" uuid NOT NULL,
-	"titulo" varchar(200) NOT NULL,
-	"edades_min" integer,
-	"edades_max" integer,
-	"descripcion" text,
-	"orden" integer DEFAULT 0,
-	"created_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	"updated_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	"created_by_user_id" uuid,
-	"updated_by_user_id" uuid,
-	PRIMARY KEY ("id")
-);
--- Equipos participantes por torneo.
-CREATE TABLE IF NOT EXISTS "equipos" (
-	"id" uuid NOT NULL,
-	"torneo_id" uuid NOT NULL,
-	"nombre" varchar(200) NOT NULL,
-	"siglas" varchar(50),
-	"logo_url" varchar(500),
-	"categoria_id" uuid,
-	"created_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	"updated_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	PRIMARY KEY ("id"),
-	CONSTRAINT "uq_equipos_torneo_nombre" UNIQUE (torneo_id,nombre)
-);
--- Jugadores (asociados a una categoría dentro del torneo).
-CREATE TABLE IF NOT EXISTS "jugadores" (
-	"id" uuid NOT NULL,
-	"torneo_id" uuid NOT NULL,
-	"categoria_id" uuid NOT NULL,
-	"nombre" varchar(120) NOT NULL,
-	"apellido" varchar(120) NOT NULL,
-	"fecha_nacimiento" date,
-	"numero" integer,
-	"created_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	"updated_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	PRIMARY KEY ("id"),
-	CONSTRAINT "uq_jugadores_torneo_numero" UNIQUE (torneo_id,numero)
-);
--- Relación muchos-a-muchos: qué jugadores pertenecen a qué equipo (dentro del torneo).
-CREATE TABLE IF NOT EXISTS "equipo_jugador" (
-	"id" uuid NOT NULL,
-	"torneo_id" uuid NOT NULL,
-	"equipo_id" uuid NOT NULL,
-	"jugador_id" uuid NOT NULL,
-	"rol" varchar(50),
-	"es_capitan" boolean NOT NULL DEFAULT false,
-	"created_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	"updated_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	"created_by_user_id" uuid,
-	"updated_by_user_id" uuid,
-	PRIMARY KEY ("id")
-);
--- Calendario/fixtures por torneo y categoría (local vs visitante).
-CREATE TABLE IF NOT EXISTS "partidos" (
-	"id" uuid NOT NULL,
-	"torneo_id" uuid NOT NULL,
-	"categoria_id" uuid NOT NULL,
-	"equipo_local_id" uuid NOT NULL,
-	"equipo_visitante_id" uuid NOT NULL,
-	"fecha_hora" timestamp with time zone NOT NULL,
-	"sede" varchar(200),
-	"estado" varchar(30) NOT NULL DEFAULT '''programado''',
-	"created_by_user_id" uuid,
-	"updated_by_user_id" uuid,
-	"created_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	"updated_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	PRIMARY KEY ("id")
-);
--- Eventos por partido: goles, asistencias, tarjetas, etc.
-CREATE TABLE IF NOT EXISTS "eventos_partido" (
-	"id" uuid NOT NULL,
-	"torneo_id" uuid NOT NULL,
-	"categoria_id" uuid NOT NULL,
-	"partido_id" uuid NOT NULL,
-	"tipo_evento" varchar(30) NOT NULL,
-	"minuto" integer,
-	"equipo_id" uuid NOT NULL,
-	"jugador_id" uuid,
-	"asistidor_id" uuid,
-	"descripcion" varchar(255),
-	"created_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	"updated_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	"created_by_user_id" uuid,
-	"updated_by_user_id" uuid,
-	PRIMARY KEY ("id")
-);
--- Tabla de puntos/posiciones por torneo y categoría (por equipo).
-CREATE TABLE IF NOT EXISTS "posiciones" (
-	"id" uuid NOT NULL,
-	"torneo_id" uuid NOT NULL,
-	"categoria_id" uuid NOT NULL,
-	"equipo_id" uuid NOT NULL,
-	"pj" integer NOT NULL DEFAULT 0,
-	"pg" integer NOT NULL DEFAULT 0,
-	"pe" integer NOT NULL DEFAULT 0,
-	"pp" integer NOT NULL DEFAULT 0,
-	"gf" integer NOT NULL DEFAULT 0,
-	"gc" integer NOT NULL DEFAULT 0,
-	"dg" integer NOT NULL DEFAULT 0,
-	"puntos" integer NOT NULL DEFAULT 0,
-	"created_by_user_id" uuid,
-	"orden" integer,
-	"updated_by_user_id" uuid,
-	"updated_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	PRIMARY KEY ("id")
-);
--- Materialización opcional del ranking de goleadores (puede recalcularse desde eventos).
-CREATE TABLE IF NOT EXISTS "goleadores" (
-	"id" uuid NOT NULL,
-	"torneo_id" uuid NOT NULL,
-	"categoria_id" uuid NOT NULL,
-	"jugador_id" uuid NOT NULL,
-	"goles" integer NOT NULL DEFAULT 0,
-	"asistencias" integer NOT NULL DEFAULT 0,
-	"orden" integer,
-	"updated_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	"created_by_user_id" uuid,
-	"updated_by_user_id" uuid,
-	PRIMARY KEY ("id")
-);
--- Materialización opcional del ranking de tarjetas (puede recalcularse desde eventos).
-CREATE TABLE IF NOT EXISTS "tarjetas" (
-	"id" uuid NOT NULL,
-	"torneo_id" uuid NOT NULL,
-	"categoria_id" uuid NOT NULL,
-	"jugador_id" uuid NOT NULL,
-	"amarillas" integer NOT NULL DEFAULT 0,
-	"rojas" integer NOT NULL DEFAULT 0,
-	"orden" integer,
-	"updated_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	"created_by_user_id" uuid,
-	"updated_by_user_id" uuid,
-	PRIMARY KEY ("id")
-);
--- Usuarios del sistema (auth).
+-- ============================================================
+-- Tournament API — Full schema (English)
+-- Generated from current Drizzle schemas
+-- ============================================================
+
+-- * Users
 CREATE TABLE IF NOT EXISTS "users" (
-	"id" uuid NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"email" varchar(255) NOT NULL UNIQUE,
 	"password_hash" varchar(255) NOT NULL,
-	"display_name" varchar(120),
+	"display_name" varchar(120) NOT NULL,
 	"avatar_url" varchar(500),
-	"is_active" boolean NOT NULL DEFAULT true,
-	"created_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	"updated_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	PRIMARY KEY ("id")
-);
--- Catálogo de roles del sistema.
-CREATE TABLE IF NOT EXISTS "roles" (
-	"id" uuid NOT NULL,
-	"name" varchar(60) NOT NULL UNIQUE,
-	"description" varchar(255),
-	"created_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	"updated_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	PRIMARY KEY ("id")
-);
--- Membership: quién puede administrar/participar en cada torneo.
-CREATE TABLE IF NOT EXISTS "torneo_members" (
-	"id" uuid NOT NULL,
-	"torneo_id" uuid NOT NULL,
-	"user_id" uuid NOT NULL,
-	"role_id" uuid NOT NULL,
-	"status" varchar(30) NOT NULL DEFAULT '''active''',
-	"created_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	"updated_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	PRIMARY KEY ("id"),
-	CONSTRAINT "uq_torneo_members_torneo_user" UNIQUE (torneo_id,user_id)
-);
--- Branding separado por torneo (evita crecimiento/mezcla en tabla principal).
-CREATE TABLE IF NOT EXISTS "torneo_branding" (
-	"id" uuid NOT NULL,
-	"torneo_id" uuid NOT NULL,
-	"logo_url" varchar(512),
-	"banner_url" varchar(512),
-	"created_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	"updated_at" timestamp with time zone NOT NULL DEFAULT 'now()',
-	"created_by_user_id" uuid,
-	"updated_by_user_id" uuid,
-	PRIMARY KEY ("id"),
-	CONSTRAINT "uq_torneo_branding_torneo_id" UNIQUE (torneo_id)
+	"is_active" boolean DEFAULT true NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 
-CREATE TABLE "patrocinadores_app" (
+CREATE TABLE IF NOT EXISTS "sessions" (
+	"id" varchar(128) PRIMARY KEY NOT NULL,
+	"user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+	"expires_at" timestamp with time zone NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+-- Super admins
+CREATE TABLE IF NOT EXISTS "super_admins" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"nombre" varchar(200) NOT NULL,
-	"descripcion" varchar(500) NOT NULL,
+	"email" varchar(255) NOT NULL UNIQUE,
+	"password_hash" varchar(255) NOT NULL,
+	"display_name" varchar(120) NOT NULL,
+	"is_active" boolean DEFAULT true NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "super_admin_sessions" (
+	"id" varchar(128) PRIMARY KEY NOT NULL,
+	"super_admin_id" uuid NOT NULL REFERENCES "super_admins"("id") ON DELETE CASCADE,
+	"expires_at" timestamp with time zone NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+-- * Roles
+CREATE TABLE IF NOT EXISTS "roles" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"name" varchar(60) NOT NULL UNIQUE,
+	"description" varchar(255),
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+-- * Tournaments
+CREATE TABLE IF NOT EXISTS "tournaments" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"name" varchar(200) NOT NULL,
+	"subtitle" varchar(255),
+	"description" text,
+	"slug" varchar(220) NOT NULL UNIQUE,
+	"start_date" date,
+	"end_date" date,
+	"timezone" varchar(60) DEFAULT 'America/Mexico_City' NOT NULL,
+	"max_sponsors" integer DEFAULT 0 NOT NULL,
+	"created_by_user_id" uuid REFERENCES "users"("id"),
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_by_user_id" uuid REFERENCES "users"("id"),
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+-- * Tournament members
+CREATE TABLE IF NOT EXISTS "tournament_members" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"tournament_id" uuid NOT NULL REFERENCES "tournaments"("id"),
+	"user_id" uuid NOT NULL REFERENCES "users"("id"),
+	"role_id" uuid NOT NULL REFERENCES "roles"("id"),
+	"status" varchar(30) DEFAULT 'active' NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+-- * Categories
+CREATE TABLE IF NOT EXISTS "categories" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"tournament_id" uuid NOT NULL REFERENCES "tournaments"("id") ON DELETE CASCADE,
+	"title" varchar(200) NOT NULL,
+	"min_age" integer,
+	"max_age" integer,
+	"description" text,
+	"sort_order" integer DEFAULT 0 NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"created_by_user_id" uuid REFERENCES "users"("id"),
+	"updated_by_user_id" uuid REFERENCES "users"("id")
+);
+
+-- * Teams
+CREATE TABLE IF NOT EXISTS "teams" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"tournament_id" uuid NOT NULL REFERENCES "tournaments"("id") ON DELETE CASCADE,
+	"category_id" uuid NOT NULL REFERENCES "categories"("id"),
+	"name" varchar(200) NOT NULL,
+	"abbreviation" varchar(50),
+	"logo_url" varchar(500),
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "uq_teams_tournament_name" UNIQUE ("tournament_id", "name")
+);
+
+-- * Players
+CREATE TABLE IF NOT EXISTS "players" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"tournament_id" uuid NOT NULL REFERENCES "tournaments"("id") ON DELETE CASCADE,
+	"category_id" uuid NOT NULL REFERENCES "categories"("id"),
+	"first_name" varchar(120) NOT NULL,
+	"last_name" varchar(120) NOT NULL,
+	"birth_date" date,
+	"number" integer,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+-- * Team ↔ Player (many-to-many)
+CREATE TABLE IF NOT EXISTS "team_players" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"tournament_id" uuid NOT NULL REFERENCES "tournaments"("id") ON DELETE CASCADE,
+	"team_id" uuid NOT NULL REFERENCES "teams"("id") ON DELETE CASCADE,
+	"player_id" uuid NOT NULL REFERENCES "players"("id") ON DELETE CASCADE,
+	"role" varchar(50),
+	"is_captain" boolean DEFAULT false NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"created_by_user_id" uuid REFERENCES "users"("id"),
+	"updated_by_user_id" uuid REFERENCES "users"("id")
+);
+
+-- * Matches
+CREATE TABLE IF NOT EXISTS "matches" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"tournament_id" uuid NOT NULL REFERENCES "tournaments"("id") ON DELETE CASCADE,
+	"category_id" uuid NOT NULL REFERENCES "categories"("id"),
+	"home_team_id" uuid NOT NULL REFERENCES "teams"("id"),
+	"away_team_id" uuid NOT NULL REFERENCES "teams"("id"),
+	"scheduled_at" timestamp with time zone NOT NULL,
+	"venue" varchar(200),
+	"status" varchar(30) DEFAULT 'scheduled' NOT NULL,
+	"created_by_user_id" uuid REFERENCES "users"("id"),
+	"updated_by_user_id" uuid REFERENCES "users"("id"),
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+-- * Match events
+CREATE TABLE IF NOT EXISTS "match_events" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"tournament_id" uuid NOT NULL REFERENCES "tournaments"("id") ON DELETE CASCADE,
+	"category_id" uuid NOT NULL REFERENCES "categories"("id"),
+	"match_id" uuid NOT NULL REFERENCES "matches"("id") ON DELETE CASCADE,
+	"event_type" varchar(30) NOT NULL,
+	"minute" integer,
+	"team_id" uuid NOT NULL REFERENCES "teams"("id"),
+	"player_id" uuid REFERENCES "players"("id"),
+	"assisted_by_player_id" uuid REFERENCES "players"("id"),
+	"description" varchar(255),
+	"created_by_user_id" uuid REFERENCES "users"("id"),
+	"updated_by_user_id" uuid REFERENCES "users"("id"),
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+-- * Standings
+CREATE TABLE IF NOT EXISTS "team_standings" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"tournament_id" uuid NOT NULL REFERENCES "tournaments"("id") ON DELETE CASCADE,
+	"category_id" uuid NOT NULL REFERENCES "categories"("id"),
+	"team_id" uuid NOT NULL REFERENCES "teams"("id"),
+	"played" integer DEFAULT 0 NOT NULL,
+	"won" integer DEFAULT 0 NOT NULL,
+	"drawn" integer DEFAULT 0 NOT NULL,
+	"lost" integer DEFAULT 0 NOT NULL,
+	"goals_for" integer DEFAULT 0 NOT NULL,
+	"goals_against" integer DEFAULT 0 NOT NULL,
+	"goal_difference" integer DEFAULT 0 NOT NULL,
+	"points" integer DEFAULT 0 NOT NULL,
+	"rank" integer,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "uq_team_standings" UNIQUE ("tournament_id", "category_id", "team_id")
+);
+
+-- * Topscorers
+CREATE TABLE IF NOT EXISTS "top_scorers" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"tournament_id" uuid NOT NULL REFERENCES "tournaments"("id") ON DELETE CASCADE,
+	"category_id" uuid NOT NULL REFERENCES "categories"("id"),
+	"player_id" uuid NOT NULL REFERENCES "players"("id"),
+	"goals" integer DEFAULT 0 NOT NULL,
+	"assists" integer DEFAULT 0 NOT NULL,
+	"rank" integer,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "uq_top_scorers" UNIQUE ("tournament_id", "category_id", "player_id")
+);
+-- * card_counts
+CREATE TABLE IF NOT EXISTS "card_counts" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"tournament_id" uuid NOT NULL REFERENCES "tournaments"("id") ON DELETE CASCADE,
+	"category_id" uuid NOT NULL REFERENCES "categories"("id"),
+	"player_id" uuid NOT NULL REFERENCES "players"("id"),
+	"yellow_cards" integer DEFAULT 0 NOT NULL,
+	"red_cards" integer DEFAULT 0 NOT NULL,
+	"rank" integer,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "uq_card_counts" UNIQUE ("tournament_id", "category_id", "player_id")
+);
+
+-- * Branding
+CREATE TABLE IF NOT EXISTS "tournament_branding" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"tournament_id" uuid NOT NULL UNIQUE REFERENCES "tournaments"("id") ON DELETE CASCADE,
+	"logo_url" varchar(512),
+	"banner_url" varchar(512),
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"created_by_user_id" uuid REFERENCES "users"("id"),
+	"updated_by_user_id" uuid REFERENCES "users"("id")
+);
+
+-- * App sponsors (global)
+CREATE TABLE IF NOT EXISTS "app_sponsors" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"name" varchar(200) NOT NULL,
+	"description" varchar(500) NOT NULL,
 	"logo_url" varchar(512) NOT NULL,
 	"logo_storage_key" varchar(512),
 	"website_url" varchar(512),
 	"pdf_url" varchar(512),
 	"pdf_storage_key" varchar(512),
-	"orden" integer DEFAULT 0 NOT NULL,
-	"activo" boolean DEFAULT true NOT NULL,
-	"fecha_inicio" date,
-	"fecha_fin" date,
+	"sort_order" integer DEFAULT 0 NOT NULL,
+	"is_active" boolean DEFAULT true NOT NULL,
+	"start_date" date,
+	"end_date" date,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"created_by_admin_id" uuid,
-	"updated_by_admin_id" uuid
+	"created_by_admin_id" uuid REFERENCES "super_admins"("id"),
+	"updated_by_admin_id" uuid REFERENCES "super_admins"("id")
 );
 
-ALTER TABLE "patrocinadores_app" ADD CONSTRAINT "patrocinadores_app_created_by_admin_id_super_admins_id_fk" FOREIGN KEY ("created_by_admin_id") REFERENCES "public"."super_admins"("id") ON DELETE no action ON UPDATE no action;
-ALTER TABLE "patrocinadores_app" ADD CONSTRAINT "patrocinadores_app_updated_by_admin_id_super_admins_id_fk" FOREIGN KEY ("updated_by_admin_id") REFERENCES "public"."super_admins"("id") ON DELETE no action ON UPDATE no action;
-ALTER TABLE "torneos" ADD CONSTRAINT "torneos_fk7" FOREIGN KEY ("created_by_user_id") REFERENCES "users"("id");
-ALTER TABLE "torneos" ADD CONSTRAINT "torneos_fk9" FOREIGN KEY ("updated_by_user_id") REFERENCES "users"("id");
-ALTER TABLE "categorias" ADD CONSTRAINT "categorias_fk1" FOREIGN KEY ("torneo_id") REFERENCES "torneos"("id");
-ALTER TABLE "categorias" ADD CONSTRAINT "categorias_fk9" FOREIGN KEY ("created_by_user_id") REFERENCES "users"("id");
-ALTER TABLE "categorias" ADD CONSTRAINT "categorias_fk10" FOREIGN KEY ("updated_by_user_id") REFERENCES "users"("id");
-ALTER TABLE "equipos" ADD CONSTRAINT "equipos_fk1" FOREIGN KEY ("torneo_id") REFERENCES "torneos"("id");
-ALTER TABLE "equipos" ADD CONSTRAINT "equipos_fk5" FOREIGN KEY ("categoria_id") REFERENCES "categorias"("id");
-ALTER TABLE "jugadores" ADD CONSTRAINT "jugadores_fk1" FOREIGN KEY ("torneo_id") REFERENCES "torneos"("id");
-ALTER TABLE "jugadores" ADD CONSTRAINT "jugadores_fk2" FOREIGN KEY ("categoria_id") REFERENCES "categorias"("id");
-ALTER TABLE "equipo_jugador" ADD CONSTRAINT "equipo_jugador_fk1" FOREIGN KEY ("torneo_id") REFERENCES "torneos"("id");
-ALTER TABLE "equipo_jugador" ADD CONSTRAINT "equipo_jugador_fk2" FOREIGN KEY ("equipo_id") REFERENCES "equipos"("id");
-ALTER TABLE "equipo_jugador" ADD CONSTRAINT "equipo_jugador_fk3" FOREIGN KEY ("jugador_id") REFERENCES "jugadores"("id");
-ALTER TABLE "equipo_jugador" ADD CONSTRAINT "equipo_jugador_fk8" FOREIGN KEY ("created_by_user_id") REFERENCES "users"("id");
-ALTER TABLE "equipo_jugador" ADD CONSTRAINT "equipo_jugador_fk9" FOREIGN KEY ("updated_by_user_id") REFERENCES "users"("id");
-ALTER TABLE "partidos" ADD CONSTRAINT "partidos_fk1" FOREIGN KEY ("torneo_id") REFERENCES "torneos"("id");
-ALTER TABLE "partidos" ADD CONSTRAINT "partidos_fk2" FOREIGN KEY ("categoria_id") REFERENCES "categorias"("id");
-ALTER TABLE "partidos" ADD CONSTRAINT "partidos_fk3" FOREIGN KEY ("equipo_local_id") REFERENCES "equipos"("id");
-ALTER TABLE "partidos" ADD CONSTRAINT "partidos_fk4" FOREIGN KEY ("equipo_visitante_id") REFERENCES "equipos"("id");
-ALTER TABLE "partidos" ADD CONSTRAINT "partidos_fk8" FOREIGN KEY ("created_by_user_id") REFERENCES "users"("id");
-ALTER TABLE "partidos" ADD CONSTRAINT "partidos_fk9" FOREIGN KEY ("updated_by_user_id") REFERENCES "users"("id");
-ALTER TABLE "eventos_partido" ADD CONSTRAINT "eventos_partido_fk1" FOREIGN KEY ("torneo_id") REFERENCES "torneos"("id");
-ALTER TABLE "eventos_partido" ADD CONSTRAINT "eventos_partido_fk2" FOREIGN KEY ("categoria_id") REFERENCES "categorias"("id");
-ALTER TABLE "eventos_partido" ADD CONSTRAINT "eventos_partido_fk3" FOREIGN KEY ("partido_id") REFERENCES "partidos"("id");
-ALTER TABLE "eventos_partido" ADD CONSTRAINT "eventos_partido_fk6" FOREIGN KEY ("equipo_id") REFERENCES "equipos"("id");
-ALTER TABLE "eventos_partido" ADD CONSTRAINT "eventos_partido_fk7" FOREIGN KEY ("jugador_id") REFERENCES "jugadores"("id");
-ALTER TABLE "eventos_partido" ADD CONSTRAINT "eventos_partido_fk8" FOREIGN KEY ("asistidor_id") REFERENCES "jugadores"("id");
-ALTER TABLE "eventos_partido" ADD CONSTRAINT "eventos_partido_fk12" FOREIGN KEY ("created_by_user_id") REFERENCES "users"("id");
-ALTER TABLE "eventos_partido" ADD CONSTRAINT "eventos_partido_fk13" FOREIGN KEY ("updated_by_user_id") REFERENCES "users"("id");
-ALTER TABLE "posiciones" ADD CONSTRAINT "posiciones_fk1" FOREIGN KEY ("torneo_id") REFERENCES "torneos"("id");
-ALTER TABLE "posiciones" ADD CONSTRAINT "posiciones_fk2" FOREIGN KEY ("categoria_id") REFERENCES "categorias"("id");
-ALTER TABLE "posiciones" ADD CONSTRAINT "posiciones_fk3" FOREIGN KEY ("equipo_id") REFERENCES "equipos"("id");
-ALTER TABLE "posiciones" ADD CONSTRAINT "posiciones_fk12" FOREIGN KEY ("created_by_user_id") REFERENCES "users"("id");
-ALTER TABLE "posiciones" ADD CONSTRAINT "posiciones_fk14" FOREIGN KEY ("updated_by_user_id") REFERENCES "users"("id");
-ALTER TABLE "goleadores" ADD CONSTRAINT "goleadores_fk1" FOREIGN KEY ("torneo_id") REFERENCES "torneos"("id");
-ALTER TABLE "goleadores" ADD CONSTRAINT "goleadores_fk2" FOREIGN KEY ("categoria_id") REFERENCES "categorias"("id");
-ALTER TABLE "goleadores" ADD CONSTRAINT "goleadores_fk3" FOREIGN KEY ("jugador_id") REFERENCES "jugadores"("id");
-ALTER TABLE "goleadores" ADD CONSTRAINT "goleadores_fk8" FOREIGN KEY ("created_by_user_id") REFERENCES "users"("id");
-ALTER TABLE "goleadores" ADD CONSTRAINT "goleadores_fk9" FOREIGN KEY ("updated_by_user_id") REFERENCES "users"("id");
-ALTER TABLE "tarjetas" ADD CONSTRAINT "tarjetas_fk1" FOREIGN KEY ("torneo_id") REFERENCES "torneos"("id");
-ALTER TABLE "tarjetas" ADD CONSTRAINT "tarjetas_fk2" FOREIGN KEY ("categoria_id") REFERENCES "categorias"("id");
-ALTER TABLE "tarjetas" ADD CONSTRAINT "tarjetas_fk3" FOREIGN KEY ("jugador_id") REFERENCES "jugadores"("id");
-ALTER TABLE "tarjetas" ADD CONSTRAINT "tarjetas_fk8" FOREIGN KEY ("created_by_user_id") REFERENCES "users"("id");
-ALTER TABLE "tarjetas" ADD CONSTRAINT "tarjetas_fk9" FOREIGN KEY ("updated_by_user_id") REFERENCES "users"("id");
-ALTER TABLE "torneo_members" ADD CONSTRAINT "torneo_members_fk1" FOREIGN KEY ("torneo_id") REFERENCES "torneos"("id");
-ALTER TABLE "torneo_members" ADD CONSTRAINT "torneo_members_fk2" FOREIGN KEY ("user_id") REFERENCES "users"("id");
-ALTER TABLE "torneo_members" ADD CONSTRAINT "torneo_members_fk3" FOREIGN KEY ("role_id") REFERENCES "roles"("id");
-ALTER TABLE "torneo_branding" ADD CONSTRAINT "torneo_branding_fk1" FOREIGN KEY ("torneo_id") REFERENCES "torneos"("id");
-ALTER TABLE "torneo_branding" ADD CONSTRAINT "torneo_branding_fk6" FOREIGN KEY ("created_by_user_id") REFERENCES "users"("id");
-ALTER TABLE "torneo_branding" ADD CONSTRAINT "torneo_branding_fk7" FOREIGN KEY ("updated_by_user_id") REFERENCES "users"("id");
-CREATE INDEX "idx_equipos_torneo_id" ON "equipos" USING btree ("torneo_id");
-CREATE INDEX "idx_equipos_torneo_categoria" ON "equipos" USING btree ("torneo_id", "categoria_id");
-CREATE INDEX "idx_equipos_torneo_categoria_id" ON "equipos" USING btree ("torneo_id", "categoria_id");
-CREATE INDEX "idx_jugadores_torneo_categoria" ON "jugadores" USING btree ("torneo_id", "categoria_id");
-CREATE INDEX "idx_jugadores_torneo_numero" ON "jugadores" USING btree ("torneo_id", "numero");
-CREATE INDEX "idx_jugadores_torneo_categoria_id" ON "jugadores" USING btree ("torneo_id", "categoria_id");
-CREATE INDEX "idx_torneo_members_torneo" ON "torneo_members" USING btree ("torneo_id");
-CREATE INDEX "idx_torneo_members_user" ON "torneo_members" USING btree ("user_id");
-CREATE INDEX "idx_torneo_members_role" ON "torneo_members" USING btree ("role_id");
-CREATE UNIQUE INDEX users_email_lower_unique ON users (LOWER(email));
-COMMENT ON TABLE "torneos" IS 'Catálogo de torneos (multi-torneo).';
-COMMENT ON TABLE "categorias" IS 'Categorías por torneo (p. ej. edades).';
-COMMENT ON TABLE "equipos" IS 'Equipos participantes por torneo.';
-COMMENT ON TABLE "jugadores" IS 'Jugadores (asociados a una categoría dentro del torneo).';
-COMMENT ON TABLE "equipo_jugador" IS 'Relación muchos-a-muchos: qué jugadores pertenecen a qué equipo (dentro del torneo).';
-COMMENT ON TABLE "partidos" IS 'Calendario/fixtures por torneo y categoría (local vs visitante).';
-COMMENT ON COLUMN "partidos"."estado" IS 'programado|en_curso|finalizado';
-COMMENT ON TABLE "eventos_partido" IS 'Eventos por partido: goles, asistencias, tarjetas, etc.';
-COMMENT ON COLUMN "eventos_partido"."tipo_evento" IS 'gol|asistencia|tarjeta_amarilla|tarjeta_roja|cambio|otro';
-COMMENT ON COLUMN "eventos_partido"."minuto" IS 'minuto del evento';
-COMMENT ON COLUMN "eventos_partido"."jugador_id" IS 'para goles/tarjetas; puede ser null si el evento no aplica a jugador';
-COMMENT ON COLUMN "eventos_partido"."asistidor_id" IS 'opcional para goles';
-COMMENT ON TABLE "posiciones" IS 'Tabla de puntos/posiciones por torneo y categoría (por equipo).';
-COMMENT ON COLUMN "posiciones"."pj" IS 'partidos jugados';
-COMMENT ON COLUMN "posiciones"."gf" IS 'goles a favor';
-COMMENT ON COLUMN "posiciones"."gc" IS 'goles en contra';
-COMMENT ON COLUMN "posiciones"."dg" IS 'diferencia de goles';
-COMMENT ON COLUMN "posiciones"."orden" IS 'posición/ranking calculado';
-COMMENT ON TABLE "goleadores" IS 'Materialización opcional del ranking de goleadores (puede recalcularse desde eventos).';
-COMMENT ON TABLE "tarjetas" IS 'Materialización opcional del ranking de tarjetas (puede recalcularse desde eventos).';
-COMMENT ON TABLE "users" IS 'Usuarios del sistema (auth).';
-COMMENT ON COLUMN "users"."password_hash" IS 'Hash de contraseña (nunca guardar password en texto plano).';
-COMMENT ON TABLE "roles" IS 'Catálogo de roles del sistema.';
-COMMENT ON COLUMN "roles"."name" IS 'admin|staff|referee|viewer';
-COMMENT ON TABLE "torneo_members" IS 'Membership: quién puede administrar/participar en cada torneo.';
-COMMENT ON COLUMN "torneo_members"."status" IS 'active|invited|suspended';
-COMMENT ON TABLE "torneo_branding" IS 'Branding separado por torneo (evita crecimiento/mezcla en tabla principal).';
+-- Tournament sponsors
+CREATE TABLE IF NOT EXISTS "tournament_sponsors" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"tournament_id" uuid NOT NULL REFERENCES "tournaments"("id") ON DELETE CASCADE,
+	"name" varchar(200) NOT NULL,
+	"description" varchar(500) NOT NULL,
+	"logo_url" varchar(512) NOT NULL,
+	"logo_storage_key" varchar(512),
+	"website_url" varchar(512),
+	"pdf_url" varchar(512),
+	"pdf_storage_key" varchar(512),
+	"sort_order" integer DEFAULT 0 NOT NULL,
+	"is_active" boolean DEFAULT true NOT NULL,
+	"start_date" date,
+	"end_date" date,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"created_by_user_id" uuid REFERENCES "users"("id"),
+	"updated_by_user_id" uuid REFERENCES "users"("id")
+);
 
+-- ============================================================
+-- Indexes optimized for 10k+ users / multi-tenant load
+-- ============================================================
+
+-- Auth / Sessions
+CREATE INDEX IF NOT EXISTS "idx_sessions_user_id" ON "sessions" ("user_id");
+CREATE INDEX IF NOT EXISTS "idx_sessions_expires_at" ON "sessions" ("expires_at");
+
+CREATE INDEX IF NOT EXISTS "idx_super_admin_sessions_admin_id" ON "super_admin_sessions" ("super_admin_id");
+CREATE INDEX IF NOT EXISTS "idx_super_admin_sessions_expires_at" ON "super_admin_sessions" ("expires_at");
+
+-- Users (email uniqueness already covered by unique + lower index)
+CREATE UNIQUE INDEX IF NOT EXISTS "users_email_lower_unique" ON "users" (LOWER("email"));
+
+-- Tournament members (very frequent lookups)
+CREATE INDEX IF NOT EXISTS "idx_tournament_members_tournament" ON "tournament_members" ("tournament_id");
+CREATE INDEX IF NOT EXISTS "idx_tournament_members_user" ON "tournament_members" ("user_id");
+CREATE INDEX IF NOT EXISTS "idx_tournament_members_role" ON "tournament_members" ("role_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "uq_tournament_members_tournament_user" 
+    ON "tournament_members" ("tournament_id", "user_id");
+
+-- Categories
+CREATE INDEX IF NOT EXISTS "idx_categories_tournament" ON "categories" ("tournament_id");
+CREATE INDEX IF NOT EXISTS "idx_categories_tournament_order" ON "categories" ("tournament_id", "sort_order");
+
+-- Teams
+CREATE INDEX IF NOT EXISTS "idx_teams_tournament" ON "teams" ("tournament_id");
+CREATE INDEX IF NOT EXISTS "idx_teams_category" ON "teams" ("category_id");
+CREATE INDEX IF NOT EXISTS "idx_teams_tournament_category" ON "teams" ("tournament_id", "category_id");
+
+-- Players
+CREATE INDEX IF NOT EXISTS "idx_players_tournament" ON "players" ("tournament_id");
+CREATE INDEX IF NOT EXISTS "idx_players_category" ON "players" ("category_id");
+CREATE INDEX IF NOT EXISTS "idx_players_tournament_category" ON "players" ("tournament_id", "category_id");
+
+-- Team ↔ Player
+CREATE INDEX IF NOT EXISTS "idx_team_players_team" ON "team_players" ("team_id");
+CREATE INDEX IF NOT EXISTS "idx_team_players_player" ON "team_players" ("player_id");
+CREATE INDEX IF NOT EXISTS "idx_team_players_tournament" ON "team_players" ("tournament_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "uq_team_players_team_player" 
+    ON "team_players" ("team_id", "player_id");
+
+-- Matches (high traffic: calendars, filters by status/date)
+CREATE INDEX IF NOT EXISTS "idx_matches_tournament" ON "matches" ("tournament_id");
+CREATE INDEX IF NOT EXISTS "idx_matches_category" ON "matches" ("category_id");
+CREATE INDEX IF NOT EXISTS "idx_matches_tournament_category" ON "matches" ("tournament_id", "category_id");
+CREATE INDEX IF NOT EXISTS "idx_matches_scheduled_at" ON "matches" ("scheduled_at");
+CREATE INDEX IF NOT EXISTS "idx_matches_status" ON "matches" ("status");
+CREATE INDEX IF NOT EXISTS "idx_matches_home_team" ON "matches" ("home_team_id");
+CREATE INDEX IF NOT EXISTS "idx_matches_away_team" ON "matches" ("away_team_id");
+CREATE INDEX IF NOT EXISTS "idx_matches_tournament_scheduled" 
+    ON "matches" ("tournament_id", "scheduled_at");
+
+-- Match events
+CREATE INDEX IF NOT EXISTS "idx_match_events_match" ON "match_events" ("match_id");
+CREATE INDEX IF NOT EXISTS "idx_match_events_tournament" ON "match_events" ("tournament_id");
+CREATE INDEX IF NOT EXISTS "idx_match_events_player" ON "match_events" ("player_id");
+CREATE INDEX IF NOT EXISTS "idx_match_events_team" ON "match_events" ("team_id");
+CREATE INDEX IF NOT EXISTS "idx_match_events_type" ON "match_events" ("event_type");
+
+-- Standings (read-heavy)
+CREATE INDEX IF NOT EXISTS "idx_team_standings_tournament_category" 
+    ON "team_standings" ("tournament_id", "category_id");
+CREATE INDEX IF NOT EXISTS "idx_team_standings_rank" 
+    ON "team_standings" ("tournament_id", "category_id", "rank");
+
+CREATE INDEX IF NOT EXISTS "idx_top_scorers_tournament_category" 
+    ON "top_scorers" ("tournament_id", "category_id");
+CREATE INDEX IF NOT EXISTS "idx_top_scorers_rank" 
+    ON "top_scorers" ("tournament_id", "category_id", "rank");
+
+CREATE INDEX IF NOT EXISTS "idx_card_counts_tournament_category" 
+    ON "card_counts" ("tournament_id", "category_id");
+
+-- Branding
+CREATE INDEX IF NOT EXISTS "idx_tournament_branding_tournament" ON "tournament_branding" ("tournament_id");
+
+-- Sponsors
+CREATE INDEX IF NOT EXISTS "idx_app_sponsors_active_order" 
+    ON "app_sponsors" ("is_active", "sort_order");
+CREATE INDEX IF NOT EXISTS "idx_tournament_sponsors_tournament" 
+    ON "tournament_sponsors" ("tournament_id");
+CREATE INDEX IF NOT EXISTS "idx_tournament_sponsors_active_order" 
+    ON "tournament_sponsors" ("tournament_id", "is_active", "sort_order");

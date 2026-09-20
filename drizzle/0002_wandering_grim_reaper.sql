@@ -1,1 +1,0 @@
-ALTER TABLE "torneos" ADD COLUMN "zona_horaria" varchar(60) DEFAULT 'America/Mexico_City' NOT NULL;

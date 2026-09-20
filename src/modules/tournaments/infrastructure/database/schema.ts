@@ -1,15 +1,15 @@
 import { pgTable, uuid, varchar, text, date, timestamp, integer } from 'drizzle-orm/pg-core';
 import { users } from '../../../auth/infrastructure/database/schema.js';
 
-export const tournaments = pgTable('torneos', {
+export const tournaments = pgTable('tournaments', {
     id: uuid('id').primaryKey().defaultRandom(),
-    name: varchar('nombre', { length: 200 }).notNull(),
-    subtitle: varchar('subtitulo', { length: 255 }),
-    description: text('descripcion'),
+    name: varchar('name', { length: 200 }).notNull(),
+    subtitle: varchar('subtitle', { length: 255 }),
+    description: text('description'),
     slug: varchar('slug', { length: 220 }).notNull().unique(),
-    startDate: date('fecha_inicio'),
-    endDate: date('fecha_fin'),
-    timezone: varchar('zona_horaria', { length: 60 }).notNull().default('America/Mexico_City'),
+    startDate: date('start_date'),
+    endDate: date('end_date'),
+    timezone: varchar('timezone', { length: 60 }).notNull().default('America/Mexico_City'),
     maxSponsors: integer('max_sponsors').notNull().default(0),
     createdByUserId: uuid('created_by_user_id').references(() => users.id),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -25,9 +25,9 @@ export const roles = pgTable('roles', {
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const tournamentMembers = pgTable('torneo_members', {
+export const tournamentMembers = pgTable('tournament_members', {
     id: uuid('id').primaryKey().defaultRandom(),
-    tournamentId: uuid('torneo_id').notNull().references(() => tournaments.id),
+    tournamentId: uuid('tournament_id').notNull().references(() => tournaments.id),
     userId: uuid('user_id').notNull().references(() => users.id),
     roleId: uuid('role_id').notNull().references(() => roles.id),
     status: varchar('status', { length: 30 }).notNull().default('active'),

@@ -1,1 +1,0 @@
-ALTER TABLE "jugadores" DROP CONSTRAINT "uq_jugadores_torneo_numero";

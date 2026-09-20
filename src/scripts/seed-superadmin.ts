@@ -9,7 +9,7 @@ async function seedSuperAdmin(): Promise<void> {
     const displayName = process.env.SUPERADMIN_DISPLAY_NAME ?? 'Super Admin';
 
     if (!email || !password) {
-        throw new Error('SUPERADMIN_EMAIL y SUPERADMIN_PASSWORD son requeridos para el seed.');
+        throw new Error('SUPERADMIN_EMAIL and SUPERADMIN_PASSWORD are required for the seed.');
     }
 
     const repository = new DrizzleSuperAdminRepository();
@@ -17,19 +17,19 @@ async function seedSuperAdmin(): Promise<void> {
 
     const existing = await repository.findByEmail(email);
     if (existing) {
-        console.log(`Superadmin ${email} ya existe, no se crea de nuevo.`);
+        console.log(`Superadmin ${email} already exists, skipping.`);
         await pool.end();
         return;
     }
 
     const passwordHash = await hasher.hash(password);
     const superAdmin = await repository.create({ email, passwordHash, displayName });
-    console.log(`Superadmin creado: ${superAdmin.email} (${superAdmin.id})`);
+    console.log(`Superadmin created: ${superAdmin.email} (${superAdmin.id})`);
 
     await pool.end();
 }
 
 seedSuperAdmin().catch((error: unknown) => {
-    console.error('Seed de superadmin falló', error);
+    console.error('Superadmin seed failed', error);
     process.exit(1);
 });

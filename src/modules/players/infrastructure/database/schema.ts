@@ -12,35 +12,35 @@ import { categories } from '../../../categories/infrastructure/database/schema.j
 import { teams } from '../../../teams/infrastructure/database/schema.js';
 import { users } from '../../../auth/infrastructure/database/schema.js';
 
-export const players = pgTable('jugadores', {
+export const players = pgTable('players', {
     id: uuid('id').primaryKey().defaultRandom(),
-    tournamentId: uuid('torneo_id')
+    tournamentId: uuid('tournament_id')
         .notNull()
         .references(() => tournaments.id, { onDelete: 'cascade' }),
-    categoryId: uuid('categoria_id')
+    categoryId: uuid('category_id')
         .notNull()
         .references(() => categories.id),
-    firstName: varchar('nombre', { length: 120 }).notNull(),
-    lastName: varchar('apellido', { length: 120 }).notNull(),
-    birthDate: date('fecha_nacimiento'),
-    number: integer('numero'),
+    firstName: varchar('first_name', { length: 120 }).notNull(),
+    lastName: varchar('last_name', { length: 120 }).notNull(),
+    birthDate: date('birth_date'),
+    number: integer('number'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const teamPlayers = pgTable('equipo_jugador', {
+export const teamPlayers = pgTable('team_players', {
     id: uuid('id').primaryKey().defaultRandom(),
-    tournamentId: uuid('torneo_id')
+    tournamentId: uuid('tournament_id')
         .notNull()
         .references(() => tournaments.id, { onDelete: 'cascade' }),
-    teamId: uuid('equipo_id')
+    teamId: uuid('team_id')
         .notNull()
         .references(() => teams.id, { onDelete: 'cascade' }),
-    playerId: uuid('jugador_id')
+    playerId: uuid('player_id')
         .notNull()
         .references(() => players.id, { onDelete: 'cascade' }),
-    role: varchar('rol', { length: 50 }),
-    isCaptain: boolean('es_capitan').notNull().default(false),
+    role: varchar('role', { length: 50 }),
+    isCaptain: boolean('is_captain').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     createdByUserId: uuid('created_by_user_id').references(() => users.id),
