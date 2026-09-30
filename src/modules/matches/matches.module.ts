@@ -3,6 +3,10 @@ import { DrizzleTournamentRepository } from '../tournaments/infrastructure/datab
 import { DrizzleTournamentMemberRepository } from '../tournaments/infrastructure/database/drizzle-tournament-member.repository.js';
 import { DrizzleCategoryRepository } from '../categories/infrastructure/database/drizzle-category.repository.js';
 import { DrizzleTeamRepository } from '../teams/infrastructure/database/drizzle-team.repository.js';
+import {
+    DrizzlePhaseRepository,
+    DrizzlePhaseGroupRepository,
+} from '../phases/infrastructure/database/drizzle-phase.repository.js';
 import { CreateMatchUseCase } from './application/use-cases/create-match.use-case.js';
 import { UpdateMatchUseCase } from './application/use-cases/update-match.use-case.js';
 import { DeleteMatchUseCase } from './application/use-cases/delete-match.use-case.js';
@@ -18,6 +22,8 @@ const tournamentRepository = new DrizzleTournamentRepository();
 const tournamentMemberRepository = new DrizzleTournamentMemberRepository();
 const categoryRepository = new DrizzleCategoryRepository();
 const teamRepository = new DrizzleTeamRepository();
+const phaseRepository = new DrizzlePhaseRepository();
+const phaseGroupRepository = new DrizzlePhaseGroupRepository();
 
 const createMatchUseCase = new CreateMatchUseCase(
     matchRepository,
@@ -25,6 +31,8 @@ const createMatchUseCase = new CreateMatchUseCase(
     tournamentMemberRepository,
     categoryRepository,
     teamRepository,
+    phaseRepository,
+    phaseGroupRepository,
 );
 const updateMatchUseCase = new UpdateMatchUseCase(
     matchRepository,
@@ -32,6 +40,8 @@ const updateMatchUseCase = new UpdateMatchUseCase(
     categoryRepository,
     teamRepository,
     recalculateMatchStatsService,
+    phaseRepository,
+    phaseGroupRepository,
 );
 const deleteMatchUseCase = new DeleteMatchUseCase(
     matchRepository,

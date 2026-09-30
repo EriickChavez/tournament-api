@@ -16,6 +16,9 @@ export const createMatchSchema = z.object({
     scheduledAt: z.string().datetime({ offset: true }),
     venue: z.string().max(200).optional(),
     status: matchStatusSchema.optional(),
+    phaseId: z.string().uuid().nullable().optional(),
+    phaseGroupId: z.string().uuid().nullable().optional(),
+    round: z.number().int().positive().nullable().optional(),
 });
 
 export const updateMatchSchema = z.object({
@@ -25,11 +28,15 @@ export const updateMatchSchema = z.object({
     scheduledAt: z.string().datetime({ offset: true }).optional(),
     venue: z.string().max(200).nullable().optional(),
     status: matchStatusSchema.optional(),
+    phaseId: z.string().uuid().nullable().optional(),
+    phaseGroupId: z.string().uuid().nullable().optional(),
+    round: z.number().int().positive().nullable().optional(),
 });
 
 export const listMatchesQuerySchema = z
     .object({
         categoryId: z.string().uuid().optional(),
         status: matchStatusSchema.optional(),
+        phaseId: z.string().uuid().optional(),
     })
     .merge(paginationQuerySchema);

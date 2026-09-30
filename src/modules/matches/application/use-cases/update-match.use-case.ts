@@ -4,12 +4,18 @@ import type { MatchRepository } from '../../domain/repositories/match.repository
 import type { TournamentMemberRepository } from '../../../tournaments/domain/repositories/tournaments-member.repository.js';
 import type { CategoryRepository } from '../../../categories/domain/repositories/category.repository.js';
 import type { TeamRepository } from '../../../teams/domain/repositories/team.repository.js';
+import type {
+    PhaseRepository,
+    PhaseGroupRepository,
+} from '../../../phases/domain/repositories/phase.repository.js';
 import { NotTournamentOwnerOrAdminError } from '../../../tournaments/domain/errors/tournaments.errors.js';
 import {
     MatchNotFoundError,
     InvalidCategoryForMatchError,
     InvalidTeamForMatchError,
     SameTeamMatchError,
+    InvalidPhaseForMatchError,
+    InvalidPhaseGroupForMatchError,
 } from '../../domain/errors/match.errors.js';
 
 /** Puerto mínimo (mismo shape que en match-events). */
@@ -29,6 +35,8 @@ export class UpdateMatchUseCase {
         private readonly categoryRepository: CategoryRepository,
         private readonly teamRepository: TeamRepository,
         private readonly matchStatsRecalculator: MatchStatsRecalculator,
+        private readonly phaseRepository: PhaseRepository,
+        private readonly phaseGroupRepository: PhaseGroupRepository,
     ) { }
 
     async execute(input: {
@@ -40,6 +48,9 @@ export class UpdateMatchUseCase {
         scheduledAt?: Date | undefined;
         venue?: string | null | undefined;
         status?: MatchStatus | undefined;
+        phaseId?: string | null | undefined;
+        phaseGroupId?: string | null | undefined;
+        round?: number | null | undefined;
     }): Promise<Match> {
         const match = await this.matchRepository.findById(input.matchId);
         if (!match) throw new MatchNotFoundError();
@@ -55,6 +66,9 @@ export class UpdateMatchUseCase {
         const nextCategoryId = input.categoryId ?? match.categoryId;
         const nextHomeTeamId = input.homeTeamId ?? match.homeTeamId;
         const nextAwayTeamId = input.awayTeamId ?? match.awayTeamId;
+        const nextPhaseId = input.phaseId !== undefined ? input.phaseId : match.phaseId;
+        const nextPhaseGroupId =
+            input.phaseGroupId !== undefined ? input.phaseGroupId : match.phaseGroupId;
 
         if (nextHomeTeamId === nextAwayTeamId) {
             throw new SameTeamMatchError();
@@ -65,7 +79,6 @@ export class UpdateMatchUseCase {
             if (!category || category.tournamentId !== match.tournamentId) {
                 throw new InvalidCategoryForMatchError();
             }
-
         }
 
         if (input.categoryId || input.homeTeamId || input.awayTeamId) {
@@ -86,6 +99,23 @@ export class UpdateMatchUseCase {
             }
         }
 
+        if (input.phaseId) {
+            const phase = await this.phaseRepository.findById(input.phaseId);
+            if (!phase || phase.categoryId !== nextCategoryId) {
+                throw new InvalidPhaseForMatchError();
+            }
+        }
+
+        if (nextPhaseGroupId) {
+            if (!nextPhaseId) {
+                throw new InvalidPhaseGroupForMatchError();
+            }
+            const group = await this.phaseGroupRepository.findById(nextPhaseGroupId);
+            if (!group || group.phaseId !== nextPhaseId) {
+                throw new InvalidPhaseGroupForMatchError();
+            }
+        }
+
         const previousStatus = match.status;
 
         const updated = await this.matchRepository.update(input.matchId, {
@@ -95,6 +125,9 @@ export class UpdateMatchUseCase {
             scheduledAt: input.scheduledAt,
             venue: input.venue,
             status: input.status,
+            phaseId: input.phaseId,
+            phaseGroupId: input.phaseGroupId,
+            round: input.round,
             updatedByUserId: input.userId,
         });
 

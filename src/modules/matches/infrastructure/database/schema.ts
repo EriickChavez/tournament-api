@@ -1,8 +1,9 @@
-import { pgTable, uuid, varchar, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, integer } from 'drizzle-orm/pg-core';
 import { tournaments } from '../../../tournaments/infrastructure/database/schema.js';
 import { categories } from '../../../categories/infrastructure/database/schema.js';
 import { teams } from '../../../teams/infrastructure/database/schema.js';
 import { users } from '../../../auth/infrastructure/database/schema.js';
+import { phases, phaseGroups } from '../../../phases/infrastructure/database/schema.js';
 
 export const matches = pgTable('matches', {
     id: uuid('id').primaryKey().defaultRandom(),
@@ -18,6 +19,11 @@ export const matches = pgTable('matches', {
     awayTeamId: uuid('away_team_id')
         .notNull()
         .references(() => teams.id),
+    phaseId: uuid('phase_id').references(() => phases.id, { onDelete: 'set null' }),
+    phaseGroupId: uuid('phase_group_id').references(() => phaseGroups.id, {
+        onDelete: 'set null',
+    }),
+    round: integer('round'),
     scheduledAt: timestamp('scheduled_at', { withTimezone: true }).notNull(),
     venue: varchar('venue', { length: 200 }),
     status: varchar('status', { length: 30 }).notNull().default('scheduled'),

@@ -11,6 +11,9 @@ export interface Match {
     categoryId: string;
     homeTeamId: string;
     awayTeamId: string;
+    phaseId: string | null;
+    phaseGroupId: string | null;
+    round: number | null;
     scheduledAt: Date;
     venue: string | null;
     status: MatchStatus;

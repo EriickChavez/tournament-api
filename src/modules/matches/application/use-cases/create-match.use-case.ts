@@ -5,6 +5,10 @@ import type { TournamentRepository } from '../../../tournaments/domain/repositor
 import type { TournamentMemberRepository } from '../../../tournaments/domain/repositories/tournaments-member.repository.js';
 import type { CategoryRepository } from '../../../categories/domain/repositories/category.repository.js';
 import type { TeamRepository } from '../../../teams/domain/repositories/team.repository.js';
+import type {
+    PhaseRepository,
+    PhaseGroupRepository,
+} from '../../../phases/domain/repositories/phase.repository.js';
 import {
     TournamentNotFoundError,
     NotTournamentOwnerOrAdminError,
@@ -13,6 +17,8 @@ import {
     InvalidCategoryForMatchError,
     InvalidTeamForMatchError,
     SameTeamMatchError,
+    InvalidPhaseForMatchError,
+    InvalidPhaseGroupForMatchError,
 } from '../../domain/errors/match.errors.js';
 
 function isOwnerOrAdmin(roleId: string): boolean {
@@ -26,6 +32,8 @@ export class CreateMatchUseCase {
         private readonly tournamentMemberRepository: TournamentMemberRepository,
         private readonly categoryRepository: CategoryRepository,
         private readonly teamRepository: TeamRepository,
+        private readonly phaseRepository: PhaseRepository,
+        private readonly phaseGroupRepository: PhaseGroupRepository,
     ) { }
 
     async execute(input: {
@@ -37,6 +45,9 @@ export class CreateMatchUseCase {
         scheduledAt: Date;
         venue?: string | undefined;
         status?: Match['status'] | undefined;
+        phaseId?: string | null | undefined;
+        phaseGroupId?: string | null | undefined;
+        round?: number | null | undefined;
     }): Promise<Match> {
         const tournament = await this.tournamentRepository.findById(input.tournamentId);
         if (!tournament) throw new TournamentNotFoundError();
@@ -74,6 +85,21 @@ export class CreateMatchUseCase {
             throw new InvalidTeamForMatchError();
         }
 
+        if (input.phaseId) {
+            const phase = await this.phaseRepository.findById(input.phaseId);
+            if (!phase || phase.categoryId !== input.categoryId) {
+                throw new InvalidPhaseForMatchError();
+            }
+        }
+
+        if (input.phaseGroupId) {
+            if (!input.phaseId) throw new InvalidPhaseGroupForMatchError();
+            const group = await this.phaseGroupRepository.findById(input.phaseGroupId);
+            if (!group || group.phaseId !== input.phaseId) {
+                throw new InvalidPhaseGroupForMatchError();
+            }
+        }
+
         return this.matchRepository.create({
             tournamentId: input.tournamentId,
             categoryId: input.categoryId,
@@ -82,6 +108,9 @@ export class CreateMatchUseCase {
             scheduledAt: input.scheduledAt,
             venue: input.venue,
             status: input.status,
+            phaseId: input.phaseId,
+            phaseGroupId: input.phaseGroupId,
+            round: input.round,
             createdByUserId: input.userId,
         });
     }

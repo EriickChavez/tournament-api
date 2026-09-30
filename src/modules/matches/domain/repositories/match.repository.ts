@@ -15,6 +15,7 @@ export interface MatchRepository {
         filters?: {
             categoryId?: string | undefined;
             status?: MatchStatus | undefined;
+            phaseId?: string | undefined;
         },
     ): Promise<Paginated<Match>>;
     create(input: {
@@ -25,6 +26,9 @@ export interface MatchRepository {
         scheduledAt: Date;
         venue?: string | null | undefined;
         status?: MatchStatus | undefined;
+        phaseId?: string | null | undefined;
+        phaseGroupId?: string | null | undefined;
+        round?: number | null | undefined;
         createdByUserId: string;
     }): Promise<Match>;
     update(
@@ -36,6 +40,9 @@ export interface MatchRepository {
             scheduledAt?: Date | undefined;
             venue?: string | null | undefined;
             status?: MatchStatus | undefined;
+            phaseId?: string | null | undefined;
+            phaseGroupId?: string | null | undefined;
+            round?: number | null | undefined;
             updatedByUserId: string;
         },
     ): Promise<Match>;

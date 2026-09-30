@@ -12,6 +12,9 @@ function toMatch(row: typeof matches.$inferSelect): Match {
         categoryId: row.categoryId,
         homeTeamId: row.homeTeamId,
         awayTeamId: row.awayTeamId,
+        phaseId: row.phaseId,
+        phaseGroupId: row.phaseGroupId,
+        round: row.round,
         scheduledAt: row.scheduledAt,
         venue: row.venue,
         status: row.status as MatchStatus,
@@ -34,11 +37,13 @@ export class DrizzleMatchRepository implements MatchRepository {
         filters?: {
             categoryId?: string | undefined;
             status?: MatchStatus | undefined;
+            phaseId?: string | undefined;
         },
     ): Promise<Paginated<Match>> {
         const conditions = [eq(matches.tournamentId, tournamentId)];
         if (filters?.categoryId) conditions.push(eq(matches.categoryId, filters.categoryId));
         if (filters?.status) conditions.push(eq(matches.status, filters.status));
+        if (filters?.phaseId) conditions.push(eq(matches.phaseId, filters.phaseId));
         const condition = and(...conditions);
 
         const [rows, countRows] = await Promise.all([
@@ -63,6 +68,9 @@ export class DrizzleMatchRepository implements MatchRepository {
         scheduledAt: Date;
         venue?: string | null | undefined;
         status?: MatchStatus | undefined;
+        phaseId?: string | null | undefined;
+        phaseGroupId?: string | null | undefined;
+        round?: number | null | undefined;
         createdByUserId: string;
     }): Promise<Match> {
         const [row] = await db
@@ -75,6 +83,9 @@ export class DrizzleMatchRepository implements MatchRepository {
                 scheduledAt: input.scheduledAt,
                 venue: input.venue ?? null,
                 status: input.status ?? 'scheduled',
+                phaseId: input.phaseId ?? null,
+                phaseGroupId: input.phaseGroupId ?? null,
+                round: input.round ?? null,
                 createdByUserId: input.createdByUserId,
             })
             .returning();
@@ -92,21 +103,30 @@ export class DrizzleMatchRepository implements MatchRepository {
             scheduledAt?: Date | undefined;
             venue?: string | null | undefined;
             status?: MatchStatus | undefined;
+            phaseId?: string | null | undefined;
+            phaseGroupId?: string | null | undefined;
+            round?: number | null | undefined;
             updatedByUserId: string;
         },
     ): Promise<Match> {
-        const patch: Record<string, unknown> = {
-            updatedAt: new Date(),
-            updatedByUserId: input.updatedByUserId,
-        };
-        if (input.categoryId !== undefined) patch.categoryId = input.categoryId;
-        if (input.homeTeamId !== undefined) patch.homeTeamId = input.homeTeamId;
-        if (input.awayTeamId !== undefined) patch.awayTeamId = input.awayTeamId;
-        if (input.scheduledAt !== undefined) patch.scheduledAt = input.scheduledAt;
-        if (input.venue !== undefined) patch.venue = input.venue;
-        if (input.status !== undefined) patch.status = input.status;
+        const [row] = await db
+            .update(matches)
+            .set({
+                ...(input.categoryId !== undefined && { categoryId: input.categoryId }),
+                ...(input.homeTeamId !== undefined && { homeTeamId: input.homeTeamId }),
+                ...(input.awayTeamId !== undefined && { awayTeamId: input.awayTeamId }),
+                ...(input.scheduledAt !== undefined && { scheduledAt: input.scheduledAt }),
+                ...(input.venue !== undefined && { venue: input.venue }),
+                ...(input.status !== undefined && { status: input.status }),
+                ...(input.phaseId !== undefined && { phaseId: input.phaseId }),
+                ...(input.phaseGroupId !== undefined && { phaseGroupId: input.phaseGroupId }),
+                ...(input.round !== undefined && { round: input.round }),
+                updatedByUserId: input.updatedByUserId,
+                updatedAt: new Date(),
+            })
+            .where(eq(matches.id, id))
+            .returning();
 
-        const [row] = await db.update(matches).set(patch).where(eq(matches.id, id)).returning();
         if (!row) throw new Error('Failed to update match');
         return toMatch(row);
     }
@@ -115,6 +135,24 @@ export class DrizzleMatchRepository implements MatchRepository {
         const [row] = await db.delete(matches).where(eq(matches.id, id)).returning();
         if (!row) throw new Error('Failed to delete match');
     }
+
+    async findFinishedByTournamentAndCategory(
+        tournamentId: string,
+        categoryId: string,
+    ): Promise<Match[]> {
+        const rows = await db
+            .select()
+            .from(matches)
+            .where(
+                and(
+                    eq(matches.tournamentId, tournamentId),
+                    eq(matches.categoryId, categoryId),
+                    eq(matches.status, 'finished'),
+                ),
+            );
+        return rows.map(toMatch);
+    }
+
     async findFinishedByTournamentCategoryAndTeam(
         tournamentId: string,
         categoryId: string,
@@ -131,20 +169,6 @@ export class DrizzleMatchRepository implements MatchRepository {
                     or(eq(matches.homeTeamId, teamId), eq(matches.awayTeamId, teamId)),
                 ),
             );
-        return rows.map((row) => ({ ...row, status: row.status as MatchStatus }));
-    }
-
-    async findFinishedByTournamentAndCategory(tournamentId: string, categoryId: string): Promise<Match[]> {
-        const rows = await db
-            .select()
-            .from(matches)
-            .where(
-                and(
-                    eq(matches.tournamentId, tournamentId),
-                    eq(matches.categoryId, categoryId),
-                    eq(matches.status, 'finished'),
-                ),
-            );
-        return rows.map((row) => ({ ...row, status: row.status as MatchStatus }));
+        return rows.map(toMatch);
     }
 }

@@ -37,3 +37,23 @@ export class InvalidMatchStatusError extends AppError {
         super(400, 'INVALID_MATCH_STATUS', `Invalid match status: "${status}".`);
     }
 }
+
+export class InvalidPhaseForMatchError extends AppError {
+    constructor() {
+        super(
+            400,
+            'INVALID_PHASE',
+            'The phase does not exist or does not belong to this category.',
+        );
+    }
+}
+
+export class InvalidPhaseGroupForMatchError extends AppError {
+    constructor() {
+        super(
+            400,
+            'INVALID_PHASE_GROUP',
+            'The phase group does not exist or does not belong to this phase.',
+        );
+    }
+}

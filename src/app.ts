@@ -27,6 +27,11 @@ import {
     publicAppSponsorRouter,
 } from './modules/app-sponsors/app-sponsors.module.js';
 import { tournamentSponsorRouter } from './modules/tournament-sponsors/tournament-sponsors.module.js';
+import {
+    tournamentCategoryPhaseRouter,
+    phaseRouter,
+    phaseGroupRouter,
+} from './modules/phases/phases.module.js';
 
 const app = express();
 
@@ -60,6 +65,12 @@ app.use('/matches', matchRouter);
 app.use('/matches/:matchId/events', matchEventRouter);
 app.use('/match-events', standaloneMatchEventRouter);
 app.use('/tournaments/:tournamentId/categories/:categoryId', standingsRouter);
+app.use(
+    '/tournaments/:tournamentId/categories/:categoryId/phases',
+    tournamentCategoryPhaseRouter,
+);
+app.use('/phases', phaseRouter);
+app.use('/phase-groups', phaseGroupRouter);
 app.use('/tournaments/:tournamentId/members', memberRouter);
 app.use('/users', userLookupRouter);
 app.use('/tournaments/:id/branding', brandingRouter);

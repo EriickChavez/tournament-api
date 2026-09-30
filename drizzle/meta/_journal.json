@@ -8,6 +8,13 @@
       "when": 1789898551693,
       "tag": "0000_dark_stardust",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790735320598,
+      "tag": "0001_nasty_red_wolf",
+      "breakpoints": true
     }
   ]
 }

@@ -68,6 +68,9 @@ export class MatchController {
                 scheduledAt: new Date(input.scheduledAt),
                 venue: input.venue,
                 status: input.status,
+                phaseId: input.phaseId,
+                phaseGroupId: input.phaseGroupId,
+                round: input.round,
             });
             res.status(201).json({ match: toPublicMatch(match) });
         } catch (error) {
@@ -88,6 +91,9 @@ export class MatchController {
                 scheduledAt: input.scheduledAt ? new Date(input.scheduledAt) : undefined,
                 venue: input.venue,
                 status: input.status,
+                phaseId: input.phaseId,
+                phaseGroupId: input.phaseGroupId,
+                round: input.round,
             });
             res.status(200).json({ match: toPublicMatch(match) });
         } catch (error) {
