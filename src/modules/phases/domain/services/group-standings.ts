@@ -18,9 +18,11 @@ export interface StandingRow {
     points: number;
     /**
      * Identifica el conjunto de equipos que siguen empatados después de todos los
-     * desempates automáticos (requieren decisión manual). null si no hay empate.
+     * desempates (requieren decisión manual). null si no hay empate.
      */
     tieGroup: number | null;
+    /** true si el orden de este equipo lo decidió el admin (desempate manual). */
+    resolvedManually: boolean;
 }
 
 interface Stats {
@@ -101,13 +103,15 @@ function splitByKey(sorted: Stats[]): Stats[][] {
 
 /**
  * Tabla de un grupo con los desempates de la plataforma:
- * 1) puntos, 2) diferencia de goles, 3) goles a favor, 4) head-to-head entre los empatados.
- * Si aun así quedan empatados, se marcan con `tieGroup` para que el admin decida.
+ * 1) puntos, 2) diferencia de goles, 3) goles a favor, 4) head-to-head entre los empatados,
+ * 5) decisión manual del admin. Si aun así quedan empatados, se marcan con `tieGroup`.
  * Solo recibe partidos terminados; los que no involucran a dos equipos del grupo se ignoran.
  */
 export function computeGroupStandings(
     teamIds: string[],
     matches: StandingMatch[],
+    /** Decisión manual del admin: menor número = mejor posición. Solo aplica a empates sin resolver. */
+    manualRanks?: ReadonlyMap<string, number>,
 ): StandingRow[] {
     const overall = accumulate(teamIds, matches);
     const sorted = [...overall.values()].sort(compareStats);
@@ -115,7 +119,7 @@ export function computeGroupStandings(
     const rows: StandingRow[] = [];
     let nextTieGroup = 1;
 
-    const push = (stats: Stats, tieGroup: number | null) => {
+    const push = (stats: Stats, tieGroup: number | null, resolvedManually = false) => {
         rows.push({
             teamId: stats.teamId,
             position: rows.length + 1,
@@ -128,7 +132,17 @@ export function computeGroupStandings(
             goalDifference: goalDifference(stats),
             points: stats.points,
             tieGroup,
+            resolvedManually,
         });
+    };
+
+    // El empate queda resuelto solo si todos tienen número manual y no se repite.
+    const isFullyRanked = (items: Stats[]): boolean => {
+        const ranks = items.map((s) => manualRanks?.get(s.teamId));
+        return (
+            ranks.every((r): r is number => r !== undefined) &&
+            new Set(ranks).size === ranks.length
+        );
     };
 
     for (const block of splitByKey(sorted)) {
@@ -153,6 +167,12 @@ export function computeGroupStandings(
             if (subBlock.length === 1 || subBlock.every((s) => s.played === 0)) {
                 // Un solo equipo, o grupo que aún no juega: no hay empate real que resolver.
                 for (const s of subBlock) push(s, null);
+            } else if (isFullyRanked(subBlock)) {
+                // El admin ya decidió el orden de todos los empatados.
+                const rankOf = (s: Stats) => manualRanks?.get(s.teamId) ?? 0;
+                for (const s of [...subBlock].sort((a, b) => rankOf(a) - rankOf(b))) {
+                    push(s, null, true);
+                }
             } else {
                 const tieGroup = nextTieGroup;
                 nextTieGroup += 1;

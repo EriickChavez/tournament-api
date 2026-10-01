@@ -45,6 +45,8 @@ export function computeQualification(
     groups: GroupStandingsInput[],
     perGroup: number,
     bestNext: number,
+    /** Decisión manual del admin entre los candidatos a "mejores": menor número = mejor. */
+    manualRanks?: ReadonlyMap<string, number>,
 ): QualificationResult {
     const qualified: QualifiedTeam[] = [];
     const pendingTies: PendingTie[] = [];
@@ -86,12 +88,17 @@ export function computeQualification(
         }
     }
 
-    // Entre grupos no hay head-to-head: solo puntos, diferencia y goles a favor.
+    // Entre grupos no hay head-to-head: puntos, diferencia, goles a favor y, si siguen
+    // iguales, la decisión manual del admin.
+    const rankOf = (teamId: string): number =>
+        manualRanks?.get(teamId) ?? Number.MAX_SAFE_INTEGER;
+
     candidates.sort(
         (a, b) =>
             b.points - a.points ||
             b.goalDifference - a.goalDifference ||
             b.goalsFor - a.goalsFor ||
+            rankOf(a.teamId) - rankOf(b.teamId) ||
             a.groupId.localeCompare(b.groupId),
     );
 
@@ -119,11 +126,18 @@ export function computeQualification(
             e.goalDifference === lastIn.goalDifference &&
             e.goalsFor === lastIn.goalsFor;
         if (tiedAtCut(firstOut)) {
-            pendingTies.push({
-                scope: 'best_next',
-                groupId: null,
-                teamIds: bestNextRanking.filter(tiedAtCut).map((e) => e.teamId),
-            });
+            const tied = bestNextRanking.filter(tiedAtCut);
+            const ranks = tied.map((e) => manualRanks?.get(e.teamId));
+            const resolved =
+                ranks.every((r): r is number => r !== undefined) &&
+                new Set(ranks).size === ranks.length;
+            if (!resolved) {
+                pendingTies.push({
+                    scope: 'best_next',
+                    groupId: null,
+                    teamIds: tied.map((e) => e.teamId),
+                });
+            }
         }
     }
 

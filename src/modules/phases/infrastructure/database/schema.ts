@@ -54,3 +54,32 @@ export const phaseTeams = pgTable(
     },
     (table) => [uniqueIndex('phase_teams_phase_team_uidx').on(table.phaseId, table.teamId)],
 );
+
+// Decisión manual del admin para romper empates que los desempates automáticos no resuelven.
+// Va en su propia tabla (y no en phase_teams) porque phase_teams se borra y recrea completa
+// cada vez que se guardan las asignaciones de equipos, y las decisiones se perderían.
+export const phaseManualRanks = pgTable(
+    'phase_manual_ranks',
+    {
+        id: uuid('id').primaryKey().defaultRandom(),
+        phaseId: uuid('phase_id')
+            .notNull()
+            .references(() => phases.id, { onDelete: 'cascade' }),
+        teamId: uuid('team_id')
+            .notNull()
+            .references(() => teams.id, { onDelete: 'cascade' }),
+        // group = empate dentro de un grupo; best_next = empate entre los mejores de varios grupos.
+        scope: varchar('scope', { length: 20 }).notNull(),
+        // Menor número = mejor posición.
+        rank: integer('rank').notNull(),
+        createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+        updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    },
+    (table) => [
+        uniqueIndex('phase_manual_ranks_phase_team_scope_uidx').on(
+            table.phaseId,
+            table.teamId,
+            table.scope,
+        ),
+    ],
+);

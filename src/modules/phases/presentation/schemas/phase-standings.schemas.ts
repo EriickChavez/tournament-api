@@ -11,3 +11,17 @@ export const phaseStandingsQuerySchema = z
         message: 'bestNext requires perGroup.',
         path: ['bestNext'],
     });
+
+export const setManualRanksSchema = z.object({
+    // group = desempate dentro de cada grupo; best_next = entre los mejores de varios grupos.
+    scope: z.enum(['group', 'best_next']),
+    // Reemplaza todas las decisiones de ese tipo; una lista vacía las borra.
+    ranks: z
+        .array(
+            z.object({
+                teamId: z.string().uuid(),
+                rank: z.number().int().min(1).max(999),
+            }),
+        )
+        .max(500),
+});

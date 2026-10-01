@@ -2,11 +2,13 @@ import type { Match } from '../../../matches/domain/entities/match.entity.js';
 import type { MatchRepository } from '../../../matches/domain/repositories/match.repository.js';
 import type { MatchEventRepository } from '../../../match-events/domain/repositories/match-event.repository.js';
 import type { Phase, PhaseGroup } from '../../domain/entities/phase.entity.js';
+import type { PhaseManualRank } from '../../domain/entities/phase-manual-rank.entity.js';
 import type {
     PhaseRepository,
     PhaseGroupRepository,
     PhaseTeamRepository,
 } from '../../domain/repositories/phase.repository.js';
+import type { PhaseManualRankRepository } from '../../domain/repositories/phase-manual-rank.repository.js';
 import { PhaseNotFoundError } from '../../domain/errors/phase.errors.js';
 import { StandingsNotAvailableError } from '../../domain/errors/phase-standings.errors.js';
 import {
@@ -33,6 +35,7 @@ export interface PhaseStandings {
         isComplete: boolean;
     };
     qualification: QualificationResult | null;
+    manualRanks: PhaseManualRank[];
 }
 
 export class GetPhaseStandingsUseCase {
@@ -42,6 +45,7 @@ export class GetPhaseStandingsUseCase {
         private readonly phaseTeamRepository: PhaseTeamRepository,
         private readonly matchRepository: MatchRepository,
         private readonly matchEventRepository: MatchEventRepository,
+        private readonly phaseManualRankRepository: PhaseManualRankRepository,
     ) { }
 
     async execute(input: {
@@ -52,11 +56,18 @@ export class GetPhaseStandingsUseCase {
         if (!phase) throw new PhaseNotFoundError();
         if (phase.type !== 'group') throw new StandingsNotAvailableError();
 
-        const [groups, phaseTeams, matches] = await Promise.all([
+        const [groups, phaseTeams, matches, manualRanks] = await Promise.all([
             this.phaseGroupRepository.findByPhaseId(phase.id),
             this.phaseTeamRepository.findByPhaseId(phase.id),
             this.matchRepository.findByPhaseId(phase.id),
+            this.phaseManualRankRepository.findByPhaseId(phase.id),
         ]);
+
+        const groupRanks = new Map<string, number>();
+        const bestNextRanks = new Map<string, number>();
+        for (const item of manualRanks) {
+            (item.scope === 'group' ? groupRanks : bestNextRanks).set(item.teamId, item.rank);
+        }
 
         const sortedGroups = [...groups].sort(
             (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
@@ -79,7 +90,10 @@ export class GetPhaseStandingsUseCase {
                 .map((pt) => pt.teamId);
             const inGroup = new Set(teamIds);
 
-            result.push({ group, standings: computeGroupStandings(teamIds, standingMatches) });
+            result.push({
+                group,
+                standings: computeGroupStandings(teamIds, standingMatches, groupRanks),
+            });
 
             // Todos contra todos: n equipos juegan n*(n-1)/2 partidos.
             expectedMatches += (teamIds.length * (teamIds.length - 1)) / 2;
@@ -97,6 +111,7 @@ export class GetPhaseStandingsUseCase {
                 })),
                 input.qualification.perGroup,
                 input.qualification.bestNext,
+                bestNextRanks,
             )
             : null;
 
@@ -110,6 +125,7 @@ export class GetPhaseStandingsUseCase {
                 isComplete: expectedMatches > 0 && finishedMatches >= expectedMatches,
             },
             qualification,
+            manualRanks,
         };
     }
 
