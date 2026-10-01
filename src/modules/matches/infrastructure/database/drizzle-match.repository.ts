@@ -15,6 +15,8 @@ function toMatch(row: typeof matches.$inferSelect): Match {
         phaseId: row.phaseId,
         phaseGroupId: row.phaseGroupId,
         round: row.round,
+        homeScore: row.homeScore,
+        awayScore: row.awayScore,
         scheduledAt: row.scheduledAt,
         venue: row.venue,
         status: row.status as MatchStatus,
@@ -29,6 +31,15 @@ export class DrizzleMatchRepository implements MatchRepository {
     async findById(id: string): Promise<Match | null> {
         const [row] = await db.select().from(matches).where(eq(matches.id, id)).limit(1);
         return row ? toMatch(row) : null;
+    }
+
+    async findByPhaseId(phaseId: string): Promise<Match[]> {
+        const rows = await db
+            .select()
+            .from(matches)
+            .where(eq(matches.phaseId, phaseId))
+            .orderBy(asc(matches.scheduledAt));
+        return rows.map(toMatch);
     }
 
     async findByTournamentId(
@@ -106,6 +117,8 @@ export class DrizzleMatchRepository implements MatchRepository {
             phaseId?: string | null | undefined;
             phaseGroupId?: string | null | undefined;
             round?: number | null | undefined;
+            homeScore?: number | null | undefined;
+            awayScore?: number | null | undefined;
             updatedByUserId: string;
         },
     ): Promise<Match> {
@@ -121,6 +134,8 @@ export class DrizzleMatchRepository implements MatchRepository {
                 ...(input.phaseId !== undefined && { phaseId: input.phaseId }),
                 ...(input.phaseGroupId !== undefined && { phaseGroupId: input.phaseGroupId }),
                 ...(input.round !== undefined && { round: input.round }),
+                ...(input.homeScore !== undefined && { homeScore: input.homeScore }),
+                ...(input.awayScore !== undefined && { awayScore: input.awayScore }),
                 updatedByUserId: input.updatedByUserId,
                 updatedAt: new Date(),
             })

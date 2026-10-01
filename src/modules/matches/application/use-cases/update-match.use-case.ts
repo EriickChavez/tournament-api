@@ -51,6 +51,8 @@ export class UpdateMatchUseCase {
         phaseId?: string | null | undefined;
         phaseGroupId?: string | null | undefined;
         round?: number | null | undefined;
+        homeScore?: number | null | undefined;
+        awayScore?: number | null | undefined;
     }): Promise<Match> {
         const match = await this.matchRepository.findById(input.matchId);
         if (!match) throw new MatchNotFoundError();
@@ -128,6 +130,8 @@ export class UpdateMatchUseCase {
             phaseId: input.phaseId,
             phaseGroupId: input.phaseGroupId,
             round: input.round,
+            homeScore: input.homeScore,
+            awayScore: input.awayScore,
             updatedByUserId: input.userId,
         });
 
@@ -143,6 +147,7 @@ export class UpdateMatchUseCase {
                 input.homeTeamId !== undefined ||
                 input.awayTeamId !== undefined);
 
+        // Si el partido queda finished (incluye cambiar solo el marcador de uno ya terminado), se recalcula.
         if (becameOrLeftFinished || structuralChangeOnFinished || updated.status === 'finished') {
             await this.matchStatsRecalculator.recalculateForMatch(input.matchId);
         }

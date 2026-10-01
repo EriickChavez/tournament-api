@@ -8,6 +8,8 @@ export interface MatchRepository {
         teamId: string,
     ): Promise<Match[]>;
     findFinishedByTournamentAndCategory(tournamentId: string, categoryId: string): Promise<Match[]>;
+    /** Todos los partidos de una fase, sin paginar (para calcular tablas). */
+    findByPhaseId(phaseId: string): Promise<Match[]>;
     findById(id: string): Promise<Match | null>;
     findByTournamentId(
         tournamentId: string,
@@ -43,6 +45,8 @@ export interface MatchRepository {
             phaseId?: string | null | undefined;
             phaseGroupId?: string | null | undefined;
             round?: number | null | undefined;
+            homeScore?: number | null | undefined;
+            awayScore?: number | null | undefined;
             updatedByUserId: string;
         },
     ): Promise<Match>;

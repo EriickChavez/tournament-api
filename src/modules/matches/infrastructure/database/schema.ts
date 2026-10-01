@@ -24,6 +24,9 @@ export const matches = pgTable('matches', {
         onDelete: 'set null',
     }),
     round: integer('round'),
+    // Marcador opcional. Si ambos están definidos, mandan sobre los eventos de gol.
+    homeScore: integer('home_score'),
+    awayScore: integer('away_score'),
     scheduledAt: timestamp('scheduled_at', { withTimezone: true }).notNull(),
     venue: varchar('venue', { length: 200 }),
     status: varchar('status', { length: 30 }).notNull().default('scheduled'),

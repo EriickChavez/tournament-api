@@ -14,6 +14,8 @@ export interface Match {
     phaseId: string | null;
     phaseGroupId: string | null;
     round: number | null;
+    homeScore: number | null;
+    awayScore: number | null;
     scheduledAt: Date;
     venue: string | null;
     status: MatchStatus;

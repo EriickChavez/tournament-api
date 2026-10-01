@@ -1,3 +1,4 @@
+import type { Match } from '../../../matches/domain/entities/match.entity.js';
 import type { MatchRepository } from '../../../matches/domain/repositories/match.repository.js';
 import type { MatchEventRepository } from '../../../match-events/domain/repositories/match-event.repository.js';
 import type { TeamStandingRepository } from '../../domain/repositories/team-standing.repository.js';
@@ -6,7 +7,8 @@ import type { CardCountRepository } from '../../domain/repositories/card-count.r
 
 /**
  * Recalcula materializaciones (posiciones, goleadores, tarjetas) a partir de
- * partidos finished + eventos. Fuente de verdad = eventos_partido / partidos.
+ * partidos finished + eventos. Fuente de verdad = marcador del partido si existe;
+ * si no, eventos_partido.
  */
 export class RecalculateMatchStatsService {
     constructor(
@@ -48,6 +50,22 @@ export class RecalculateMatchStatsService {
         await this.recalculateTopScorersAndCards(tournamentId, categoryId);
     }
 
+    /**
+     * Goles de cada lado. Si el partido tiene marcador se usa ese (y se ahorra la
+     * consulta de eventos); si no, se cuentan los eventos 'gol' como antes.
+     */
+    private async resolveGoals(match: Match): Promise<{ homeGoals: number; awayGoals: number }> {
+        if (match.homeScore !== null && match.awayScore !== null) {
+            return { homeGoals: match.homeScore, awayGoals: match.awayScore };
+        }
+
+        const events = await this.matchEventRepository.findByMatchId(match.id);
+        return {
+            homeGoals: events.filter((e) => e.eventType === 'gol' && e.teamId === match.homeTeamId).length,
+            awayGoals: events.filter((e) => e.eventType === 'gol' && e.teamId === match.awayTeamId).length,
+        };
+    }
+
     private async recalculateTeamStanding(
         tournamentId: string,
         categoryId: string,
@@ -67,9 +85,7 @@ export class RecalculateMatchStatsService {
         let goalsAgainst = 0;
 
         for (const match of finishedMatches) {
-            const events = await this.matchEventRepository.findByMatchId(match.id);
-            const homeGoals = events.filter((e) => e.eventType === 'gol' && e.teamId === match.homeTeamId).length;
-            const awayGoals = events.filter((e) => e.eventType === 'gol' && e.teamId === match.awayTeamId).length;
+            const { homeGoals, awayGoals } = await this.resolveGoals(match);
 
             const isHome = match.homeTeamId === teamId;
             const teamGoals = isHome ? homeGoals : awayGoals;

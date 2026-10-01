@@ -30,6 +30,8 @@ export function toPublicMatch(match: Match) {
         phaseId: match.phaseId,
         phaseGroupId: match.phaseGroupId,
         round: match.round,
+        homeScore: match.homeScore,
+        awayScore: match.awayScore,
         scheduledAt: match.scheduledAt.toISOString(),
         venue: match.venue,
         status: match.status,

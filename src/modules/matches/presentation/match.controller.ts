@@ -94,6 +94,8 @@ export class MatchController {
                 phaseId: input.phaseId,
                 phaseGroupId: input.phaseGroupId,
                 round: input.round,
+                homeScore: input.homeScore,
+                awayScore: input.awayScore,
             });
             res.status(200).json({ match: toPublicMatch(match) });
         } catch (error) {

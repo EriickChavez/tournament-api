@@ -15,6 +15,13 @@
       "when": 1790735320598,
       "tag": "0001_nasty_red_wolf",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790842057881,
+      "tag": "0002_new_taskmaster",
+      "breakpoints": true
     }
   ]
 }
