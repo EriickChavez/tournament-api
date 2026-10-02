@@ -25,3 +25,8 @@ export const setManualRanksSchema = z.object({
         )
         .max(500),
 });
+
+export const closePhaseSchema = z.object({
+    perGroup: z.number().int().min(1).max(32),
+    bestNext: z.number().int().min(0).max(64).optional(),
+});

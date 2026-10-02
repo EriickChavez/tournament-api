@@ -25,3 +25,41 @@ export class DuplicateManualRankError extends AppError {
         );
     }
 }
+
+export class PhaseAlreadyClosedError extends AppError {
+    constructor() {
+        super(409, 'PHASE_ALREADY_CLOSED', 'This phase is already closed.');
+    }
+}
+
+export class PhaseNotClosedError extends AppError {
+    constructor() {
+        super(409, 'PHASE_NOT_CLOSED', 'This phase is not closed.');
+    }
+}
+
+export class PhaseNotCompleteError extends AppError {
+    constructor(finished: number, expected: number) {
+        super(
+            409,
+            'PHASE_NOT_COMPLETE',
+            `Not all group matches are finished (${finished} of ${expected}).`,
+        );
+    }
+}
+
+export class PhaseHasPendingTiesError extends AppError {
+    constructor() {
+        super(
+            409,
+            'PHASE_HAS_PENDING_TIES',
+            'There are unresolved ties that affect who qualifies. Resolve them before closing the phase.',
+        );
+    }
+}
+
+export class InvalidQualificationConfigError extends AppError {
+    constructor(message: string) {
+        super(400, 'INVALID_QUALIFICATION_CONFIG', message);
+    }
+}

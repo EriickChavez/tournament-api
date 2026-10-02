@@ -83,3 +83,46 @@ export const phaseManualRanks = pgTable(
         ),
     ],
 );
+
+// Cierre manual de una fase de grupos: guarda con qué configuración se cerró y quién/cuándo.
+export const phaseClosures = pgTable(
+    'phase_closures',
+    {
+        id: uuid('id').primaryKey().defaultRandom(),
+        phaseId: uuid('phase_id')
+            .notNull()
+            .references(() => phases.id, { onDelete: 'cascade' }),
+        qualifiersPerGroup: integer('qualifiers_per_group').notNull(),
+        bestNextCount: integer('best_next_count').notNull(),
+        closedByUserId: uuid('closed_by_user_id').references(() => users.id),
+        closedAt: timestamp('closed_at', { withTimezone: true }).notNull().defaultNow(),
+    },
+    (table) => [uniqueIndex('phase_closures_phase_uidx').on(table.phaseId)],
+);
+
+// Foto de los clasificados al cerrar la fase. La llave parte de esta tabla, no de un recálculo,
+// para que editar un resultado después no cambie quién ya clasificó.
+export const phaseQualifiedTeams = pgTable(
+    'phase_qualified_teams',
+    {
+        id: uuid('id').primaryKey().defaultRandom(),
+        phaseId: uuid('phase_id')
+            .notNull()
+            .references(() => phases.id, { onDelete: 'cascade' }),
+        teamId: uuid('team_id')
+            .notNull()
+            .references(() => teams.id, { onDelete: 'cascade' }),
+        phaseGroupId: uuid('phase_group_id').references(() => phaseGroups.id, {
+            onDelete: 'set null',
+        }),
+        // Posición final en su grupo (los mejores terceros guardan 3, etc.).
+        position: integer('position').notNull(),
+        // group = pasó directo; best_next = pasó como uno de los mejores del siguiente puesto.
+        via: varchar('via', { length: 20 }).notNull(),
+        points: integer('points').notNull(),
+        goalDifference: integer('goal_difference').notNull(),
+        goalsFor: integer('goals_for').notNull(),
+        createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    },
+    (table) => [uniqueIndex('phase_qualified_teams_phase_team_uidx').on(table.phaseId, table.teamId)],
+);

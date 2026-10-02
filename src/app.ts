@@ -32,7 +32,10 @@ import {
     phaseRouter,
     phaseGroupRouter,
 } from './modules/phases/phases.module.js';
-import { phaseStandingsRouter } from './modules/phases/phase-standings.module.js';
+import {
+    phaseStandingsRouter,
+    phaseClosureRouter,
+} from './modules/phases/phase-standings.module.js';
 import { tournamentImportRouter } from './modules/imports/imports.module.js';
 
 const app = express();
@@ -74,6 +77,7 @@ app.use(
 );
 app.use('/phases', phaseRouter);
 app.use('/phases/:phaseId/standings', phaseStandingsRouter);
+app.use('/phases/:phaseId', phaseClosureRouter);
 app.use('/phase-groups', phaseGroupRouter);
 app.use('/tournaments/:tournamentId/members', memberRouter);
 app.use('/users', userLookupRouter);
