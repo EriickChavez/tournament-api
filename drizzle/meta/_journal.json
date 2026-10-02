@@ -36,6 +36,20 @@
       "when": 1790913164067,
       "tag": "0004_wonderful_stardust",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790931046549,
+      "tag": "0005_confused_chimera",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790932080809,
+      "tag": "0006_new_victor_mancha",
+      "breakpoints": true
     }
   ]
 }

@@ -27,6 +27,9 @@ export const matches = pgTable('matches', {
     // Marcador opcional. Si ambos están definidos, mandan sobre los eventos de gol.
     homeScore: integer('home_score'),
     awayScore: integer('away_score'),
+    // Tanda de penales (solo eliminatoria): únicamente tiene sentido si el marcador queda empatado.
+    homePenalties: integer('home_penalties'),
+    awayPenalties: integer('away_penalties'),
     scheduledAt: timestamp('scheduled_at', { withTimezone: true }).notNull(),
     venue: varchar('venue', { length: 200 }),
     status: varchar('status', { length: 30 }).notNull().default('scheduled'),

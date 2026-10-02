@@ -36,6 +36,8 @@ export const updateMatchSchema = z
         round: z.number().int().positive().nullable().optional(),
         homeScore: scoreSchema.nullable().optional(),
         awayScore: scoreSchema.nullable().optional(),
+        homePenalties: scoreSchema.nullable().optional(),
+        awayPenalties: scoreSchema.nullable().optional(),
     })
     // El marcador siempre viaja completo: ambos goles, o ninguno (null borra los dos).
     .refine((data) => (data.homeScore === undefined) === (data.awayScore === undefined), {
@@ -45,6 +47,15 @@ export const updateMatchSchema = z
     .refine((data) => (data.homeScore === null) === (data.awayScore === null), {
         message: 'homeScore and awayScore must both be numbers or both be null.',
         path: ['homeScore'],
+    })
+    // Igual con los penales.
+    .refine((data) => (data.homePenalties === undefined) === (data.awayPenalties === undefined), {
+        message: 'homePenalties and awayPenalties must be sent together.',
+        path: ['homePenalties'],
+    })
+    .refine((data) => (data.homePenalties === null) === (data.awayPenalties === null), {
+        message: 'homePenalties and awayPenalties must both be numbers or both be null.',
+        path: ['homePenalties'],
     });
 
 export const listMatchesQuerySchema = z

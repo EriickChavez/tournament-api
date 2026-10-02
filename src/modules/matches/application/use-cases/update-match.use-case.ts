@@ -17,6 +17,8 @@ import {
     InvalidPhaseForMatchError,
     InvalidPhaseGroupForMatchError,
 } from '../../domain/errors/match.errors.js';
+import { resolvePenalties } from '../../domain/services/match-outcome.js';
+import type { MatchBracketSync } from '../ports/match-bracket-sync.port.js';
 
 /** Puerto mínimo (mismo shape que en match-events). */
 export interface MatchStatsRecalculator {
@@ -37,6 +39,8 @@ export class UpdateMatchUseCase {
         private readonly matchStatsRecalculator: MatchStatsRecalculator,
         private readonly phaseRepository: PhaseRepository,
         private readonly phaseGroupRepository: PhaseGroupRepository,
+        // Opcional: lo conecta el módulo de llaves para que el ganador avance solo.
+        private readonly matchBracketSync?: MatchBracketSync,
     ) { }
 
     async execute(input: {
@@ -53,6 +57,8 @@ export class UpdateMatchUseCase {
         round?: number | null | undefined;
         homeScore?: number | null | undefined;
         awayScore?: number | null | undefined;
+        homePenalties?: number | null | undefined;
+        awayPenalties?: number | null | undefined;
     }): Promise<Match> {
         const match = await this.matchRepository.findById(input.matchId);
         if (!match) throw new MatchNotFoundError();
@@ -64,6 +70,9 @@ export class UpdateMatchUseCase {
         if (!member || !isOwnerOrAdmin(member.roleId)) {
             throw new NotTournamentOwnerOrAdminError();
         }
+
+        // Valida los penales y limpia los que quedaron obsoletos si el marcador ya no es empate.
+        const penalties = resolvePenalties(match, input);
 
         const nextCategoryId = input.categoryId ?? match.categoryId;
         const nextHomeTeamId = input.homeTeamId ?? match.homeTeamId;
@@ -118,6 +127,19 @@ export class UpdateMatchUseCase {
             }
         }
 
+        // Antes de escribir: si el partido es parte de una llave, el cambio no debe romperla.
+        await this.matchBracketSync?.assertCanApply(match, {
+            homeTeamId: nextHomeTeamId,
+            awayTeamId: nextAwayTeamId,
+            status: input.status ?? match.status,
+            homeScore: input.homeScore !== undefined ? input.homeScore : match.homeScore,
+            awayScore: input.awayScore !== undefined ? input.awayScore : match.awayScore,
+            homePenalties:
+                penalties.homePenalties !== undefined ? penalties.homePenalties : match.homePenalties,
+            awayPenalties:
+                penalties.awayPenalties !== undefined ? penalties.awayPenalties : match.awayPenalties,
+        });
+
         const previousStatus = match.status;
 
         const updated = await this.matchRepository.update(input.matchId, {
@@ -132,6 +154,8 @@ export class UpdateMatchUseCase {
             round: input.round,
             homeScore: input.homeScore,
             awayScore: input.awayScore,
+            homePenalties: penalties.homePenalties,
+            awayPenalties: penalties.awayPenalties,
             updatedByUserId: input.userId,
         });
 
@@ -160,6 +184,9 @@ export class UpdateMatchUseCase {
                 match.awayTeamId,
             ]);
         }
+
+        // Propaga el ganador/perdedor al siguiente cruce de la llave (si el partido pertenece a una).
+        await this.matchBracketSync?.sync(input.matchId);
 
         return updated;
     }

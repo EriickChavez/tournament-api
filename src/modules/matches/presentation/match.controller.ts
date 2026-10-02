@@ -96,6 +96,8 @@ export class MatchController {
                 round: input.round,
                 homeScore: input.homeScore,
                 awayScore: input.awayScore,
+                homePenalties: input.homePenalties,
+                awayPenalties: input.awayPenalties,
             });
             res.status(200).json({ match: toPublicMatch(match) });
         } catch (error) {

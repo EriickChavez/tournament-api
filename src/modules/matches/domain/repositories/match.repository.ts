@@ -47,6 +47,8 @@ export interface MatchRepository {
             round?: number | null | undefined;
             homeScore?: number | null | undefined;
             awayScore?: number | null | undefined;
+            homePenalties?: number | null | undefined;
+            awayPenalties?: number | null | undefined;
             updatedByUserId: string;
         },
     ): Promise<Match>;

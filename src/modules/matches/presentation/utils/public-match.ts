@@ -32,6 +32,8 @@ export function toPublicMatch(match: Match) {
         round: match.round,
         homeScore: match.homeScore,
         awayScore: match.awayScore,
+        homePenalties: match.homePenalties,
+        awayPenalties: match.awayPenalties,
         scheduledAt: match.scheduledAt.toISOString(),
         venue: match.venue,
         status: match.status,

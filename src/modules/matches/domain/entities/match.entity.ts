@@ -16,6 +16,8 @@ export interface Match {
     round: number | null;
     homeScore: number | null;
     awayScore: number | null;
+    homePenalties: number | null;
+    awayPenalties: number | null;
     scheduledAt: Date;
     venue: string | null;
     status: MatchStatus;

@@ -17,6 +17,8 @@ function toMatch(row: typeof matches.$inferSelect): Match {
         round: row.round,
         homeScore: row.homeScore,
         awayScore: row.awayScore,
+        homePenalties: row.homePenalties,
+        awayPenalties: row.awayPenalties,
         scheduledAt: row.scheduledAt,
         venue: row.venue,
         status: row.status as MatchStatus,
@@ -119,6 +121,8 @@ export class DrizzleMatchRepository implements MatchRepository {
             round?: number | null | undefined;
             homeScore?: number | null | undefined;
             awayScore?: number | null | undefined;
+            homePenalties?: number | null | undefined;
+            awayPenalties?: number | null | undefined;
             updatedByUserId: string;
         },
     ): Promise<Match> {
@@ -136,6 +140,8 @@ export class DrizzleMatchRepository implements MatchRepository {
                 ...(input.round !== undefined && { round: input.round }),
                 ...(input.homeScore !== undefined && { homeScore: input.homeScore }),
                 ...(input.awayScore !== undefined && { awayScore: input.awayScore }),
+                ...(input.homePenalties !== undefined && { homePenalties: input.homePenalties }),
+                ...(input.awayPenalties !== undefined && { awayPenalties: input.awayPenalties }),
                 updatedByUserId: input.updatedByUserId,
                 updatedAt: new Date(),
             })
