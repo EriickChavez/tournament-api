@@ -9,6 +9,7 @@ import { DrizzleMatchRepository } from '../matches/infrastructure/database/drizz
 import { CreateMatchUseCase } from '../matches/application/use-cases/create-match.use-case.js';
 import { requireAuth } from '../auth/auth.module.js';
 import { DrizzleBracketRepository } from './infrastructure/database/drizzle-bracket.repository.js';
+import { BracketAdvancer } from './application/services/bracket-advancer.service.js';
 import { GenerateBracketUseCase } from './application/use-cases/generate-bracket.use-case.js';
 import { GetBracketUseCase } from './application/use-cases/get-bracket.use-case.js';
 import { ScheduleBracketMatchUseCase } from './application/use-cases/schedule-bracket-match.use-case.js';
@@ -24,6 +25,9 @@ const categoryRepository = new DrizzleCategoryRepository();
 const teamRepository = new DrizzleTeamRepository();
 const matchRepository = new DrizzleMatchRepository();
 const bracketRepository = new DrizzleBracketRepository();
+
+// Lo usa el módulo de partidos para que el ganador avance solo (mismo patrón que standings).
+export const bracketAdvancer = new BracketAdvancer(bracketRepository, matchRepository);
 
 // Misma creación de partidos que usa /tournaments/:id/matches (los repositorios no guardan estado).
 const createMatch = new CreateMatchUseCase(

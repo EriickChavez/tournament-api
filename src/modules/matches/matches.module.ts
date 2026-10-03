@@ -16,6 +16,7 @@ import { MatchController } from './presentation/match.controller.js';
 import { createMatchRouter, createTournamentMatchRouter } from './presentation/match.routes.js';
 import { requireAuth } from '../auth/auth.module.js';
 import { recalculateMatchStatsService } from '../standings/standings.module.js';
+import { bracketAdvancer } from '../brackets/brackets.module.js';
 
 const matchRepository = new DrizzleMatchRepository();
 const tournamentRepository = new DrizzleTournamentRepository();
@@ -42,11 +43,13 @@ const updateMatchUseCase = new UpdateMatchUseCase(
     recalculateMatchStatsService,
     phaseRepository,
     phaseGroupRepository,
+    bracketAdvancer,
 );
 const deleteMatchUseCase = new DeleteMatchUseCase(
     matchRepository,
     tournamentMemberRepository,
     recalculateMatchStatsService,
+    bracketAdvancer,
 );
 const listMatchesUseCase = new ListMatchesUseCase(
     matchRepository,

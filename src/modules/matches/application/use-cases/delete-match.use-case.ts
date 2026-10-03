@@ -4,6 +4,7 @@ import type { TournamentMemberRepository } from '../../../tournaments/domain/rep
 import { NotTournamentOwnerOrAdminError } from '../../../tournaments/domain/errors/tournaments.errors.js';
 import { MatchNotFoundError } from '../../domain/errors/match.errors.js';
 import type { MatchStatsRecalculator } from './update-match.use-case.js';
+import type { MatchBracketSync } from '../ports/match-bracket-sync.port.js';
 
 function isOwnerOrAdmin(roleId: string): boolean {
     return roleId === env.OWNER_ROLE_ID || roleId === env.ADMIN_ROLE_ID;
@@ -14,6 +15,8 @@ export class DeleteMatchUseCase {
         private readonly matchRepository: MatchRepository,
         private readonly tournamentMemberRepository: TournamentMemberRepository,
         private readonly matchStatsRecalculator: MatchStatsRecalculator,
+        // Opcional: lo conecta el módulo de llaves para liberar el cruce al borrar su partido.
+        private readonly matchBracketSync?: MatchBracketSync,
     ) { }
 
     async execute(input: { matchId: string; userId: string }): Promise<void> {
@@ -27,6 +30,10 @@ export class DeleteMatchUseCase {
         if (!member || !isOwnerOrAdmin(member.roleId)) {
             throw new NotTournamentOwnerOrAdminError();
         }
+
+        // Si el partido es de una llave: se valida que no rompa un cruce ya programado y se
+        // dejan por definir el ganador y los equipos que dependían de él.
+        await this.matchBracketSync?.releaseForDeletion(input.matchId);
 
         await this.matchRepository.delete(input.matchId);
 

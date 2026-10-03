@@ -1,12 +1,15 @@
 import { randomUUID } from 'node:crypto';
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, isNull, or } from 'drizzle-orm';
 import { db } from '../../../../config/database.js';
 import { phaseBracketNodes } from './schema.js';
 import type {
     BracketNode,
     BracketSourceKind,
 } from '../../domain/entities/bracket-node.entity.js';
-import type { BracketRepository } from '../../domain/repositories/bracket.repository.js';
+import type {
+    BracketRepository,
+    BracketSlotUpdate,
+} from '../../domain/repositories/bracket.repository.js';
 import type {
     BracketNodeDraft,
     BracketSlot,
@@ -56,6 +59,28 @@ export class DrizzleBracketRepository implements BracketRepository {
             .where(eq(phaseBracketNodes.id, id))
             .limit(1);
         return row ? mapNode(row) : null;
+    }
+
+    async findByMatchId(matchId: string): Promise<BracketNode | null> {
+        const [row] = await db
+            .select()
+            .from(phaseBracketNodes)
+            .where(eq(phaseBracketNodes.matchId, matchId))
+            .limit(1);
+        return row ? mapNode(row) : null;
+    }
+
+    async findDependents(nodeId: string): Promise<BracketNode[]> {
+        const rows = await db
+            .select()
+            .from(phaseBracketNodes)
+            .where(
+                or(
+                    eq(phaseBracketNodes.homeSourceNodeId, nodeId),
+                    eq(phaseBracketNodes.awaySourceNodeId, nodeId),
+                ),
+            );
+        return rows.map(mapNode);
     }
 
     async replaceAll(phaseId: string, drafts: BracketNodeDraft[]): Promise<BracketNode[]> {
@@ -112,5 +137,29 @@ export class DrizzleBracketRepository implements BracketRepository {
             .where(and(eq(phaseBracketNodes.id, nodeId), isNull(phaseBracketNodes.matchId)))
             .returning();
         return row ? mapNode(row) : null;
+    }
+
+    async applyResult(
+        nodeId: string,
+        winnerTeamId: string | null,
+        slotUpdates: BracketSlotUpdate[],
+    ): Promise<void> {
+        await db.transaction(async (tx) => {
+            await tx
+                .update(phaseBracketNodes)
+                .set({ winnerTeamId, updatedAt: new Date() })
+                .where(eq(phaseBracketNodes.id, nodeId));
+
+            for (const update of slotUpdates) {
+                const values =
+                    update.side === 'home'
+                        ? { homeTeamId: update.teamId, updatedAt: new Date() }
+                        : { awayTeamId: update.teamId, updatedAt: new Date() };
+                await tx
+                    .update(phaseBracketNodes)
+                    .set(values)
+                    .where(eq(phaseBracketNodes.id, update.nodeId));
+            }
+        });
     }
 }

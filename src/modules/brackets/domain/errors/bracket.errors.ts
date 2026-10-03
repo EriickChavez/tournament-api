@@ -57,3 +57,23 @@ export class BracketNodeAlreadyScheduledError extends AppError {
         super(409, 'BRACKET_NODE_ALREADY_SCHEDULED', 'This matchup already has a scheduled match.');
     }
 }
+
+export class BracketAdvanceConflictError extends AppError {
+    constructor() {
+        super(
+            409,
+            'BRACKET_ADVANCE_CONFLICT',
+            'This change would alter the result of a matchup that already feeds a scheduled match. Delete or reschedule the next match first.',
+        );
+    }
+}
+
+export class BracketMatchTeamsLockedError extends AppError {
+    constructor() {
+        super(
+            409,
+            'BRACKET_MATCH_TEAMS_LOCKED',
+            'The teams of a bracket match cannot be changed.',
+        );
+    }
+}
