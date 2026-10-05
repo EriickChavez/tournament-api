@@ -1,0 +1,2 @@
+ALTER TABLE "phase_bracket_nodes" ADD COLUMN "source_phase_id" uuid;--> statement-breakpoint
+ALTER TABLE "phase_bracket_nodes" ADD CONSTRAINT "phase_bracket_nodes_source_phase_id_phases_id_fk" FOREIGN KEY ("source_phase_id") REFERENCES "public"."phases"("id") ON DELETE set null ON UPDATE no action;

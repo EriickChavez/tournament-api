@@ -50,6 +50,20 @@
       "when": 1790932080809,
       "tag": "0006_new_victor_mancha",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791020850656,
+      "tag": "0007_fair_celestials",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791169937577,
+      "tag": "0008_cool_retro_girl",
+      "breakpoints": true
     }
   ]
 }

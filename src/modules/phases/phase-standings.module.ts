@@ -8,6 +8,7 @@ import { DrizzlePhaseClosureRepository } from './infrastructure/database/drizzle
 import { DrizzleMatchRepository } from '../matches/infrastructure/database/drizzle-match.repository.js';
 import { DrizzleMatchEventRepository } from '../match-events/infrastructure/database/drizzle-match-event.repository.js';
 import { DrizzleTournamentMemberRepository } from '../tournaments/infrastructure/database/drizzle-tournament-member.repository.js';
+import { DrizzleBracketRepository } from '../brackets/infrastructure/database/drizzle-bracket.repository.js';
 import { requireAuth } from '../auth/auth.module.js';
 import { GetPhaseStandingsUseCase } from './application/use-cases/get-phase-standings.use-case.js';
 import { GetPhaseClosureUseCase } from './application/use-cases/get-phase-closure.use-case.js';
@@ -26,6 +27,8 @@ const phaseClosureRepository = new DrizzlePhaseClosureRepository();
 const matchRepository = new DrizzleMatchRepository();
 const matchEventRepository = new DrizzleMatchEventRepository();
 const tournamentMemberRepository = new DrizzleTournamentMemberRepository();
+// Solo se usa para saber si hay una llave construida con los clasificados de una fase.
+const bracketRepository = new DrizzleBracketRepository();
 
 const getPhaseStandings = new GetPhaseStandingsUseCase(
     phaseRepository,
@@ -56,6 +59,7 @@ const reopenPhase = new ReopenPhaseUseCase(
     phaseRepository,
     tournamentMemberRepository,
     phaseClosureRepository,
+    bracketRepository,
 );
 
 const controller = new PhaseStandingsController(

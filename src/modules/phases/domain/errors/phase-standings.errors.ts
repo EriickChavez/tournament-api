@@ -38,6 +38,16 @@ export class PhaseNotClosedError extends AppError {
     }
 }
 
+export class PhaseHasBracketError extends AppError {
+    constructor() {
+        super(
+            409,
+            'PHASE_HAS_BRACKET',
+            'A bracket was generated from this phase. Delete the bracket first to reopen the phase.',
+        );
+    }
+}
+
 export class PhaseNotCompleteError extends AppError {
     constructor(finished: number, expected: number) {
         super(

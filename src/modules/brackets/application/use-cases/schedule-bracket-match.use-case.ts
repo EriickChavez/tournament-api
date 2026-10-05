@@ -9,6 +9,9 @@ import {
     BracketNodeNotFoundError,
     BracketNodeNotReadyError,
     BracketNodeAlreadyScheduledError,
+    BracketLegNotAvailableError,
+    BracketFirstLegRequiredError,
+    SecondLegBeforeFirstError,
 } from '../../domain/errors/bracket.errors.js';
 
 export class ScheduleBracketMatchUseCase {
@@ -25,6 +28,8 @@ export class ScheduleBracketMatchUseCase {
         userId: string;
         scheduledAt: Date;
         venue?: string | undefined;
+        /** 1 = partido único o ida; 2 = vuelta. */
+        leg: 1 | 2;
     }): Promise<{ node: BracketNode; match: Match }> {
         const node = await this.bracketRepository.findById(input.nodeId);
         if (!node || node.phaseId !== input.phaseId) throw new BracketNodeNotFoundError();
@@ -33,15 +38,32 @@ export class ScheduleBracketMatchUseCase {
         if (!phase) throw new PhaseNotFoundError();
 
         if (!node.homeTeamId || !node.awayTeamId) throw new BracketNodeNotReadyError();
-        if (node.matchId) throw new BracketNodeAlreadyScheduledError();
+
+        if (input.leg === 2) {
+            if (node.legs !== 2) throw new BracketLegNotAvailableError();
+            if (!node.matchId) throw new BracketFirstLegRequiredError();
+            if (node.secondLegMatchId) throw new BracketNodeAlreadyScheduledError();
+
+            // La vuelta se juega después de la ida.
+            const first = await this.matchRepository.findById(node.matchId);
+            if (first && input.scheduledAt.getTime() <= first.scheduledAt.getTime()) {
+                throw new SecondLegBeforeFirstError();
+            }
+        } else if (node.matchId) {
+            throw new BracketNodeAlreadyScheduledError();
+        }
+
+        // En la vuelta se invierte la localía: juega de local el equipo de abajo del cruce.
+        const homeTeamId = input.leg === 1 ? node.homeTeamId : node.awayTeamId;
+        const awayTeamId = input.leg === 1 ? node.awayTeamId : node.homeTeamId;
 
         // Se reutiliza la creación de partidos: permisos (owner/admin) y validaciones incluidas.
         const match = await this.createMatch.execute({
             tournamentId: phase.tournamentId,
             userId: input.userId,
             categoryId: phase.categoryId,
-            homeTeamId: node.homeTeamId,
-            awayTeamId: node.awayTeamId,
+            homeTeamId,
+            awayTeamId,
             scheduledAt: input.scheduledAt,
             venue: input.venue,
             phaseId: phase.id,
@@ -50,9 +72,9 @@ export class ScheduleBracketMatchUseCase {
             round: node.stage === 'play_in' ? null : node.round,
         });
 
-        const updated = await this.bracketRepository.attachMatch(node.id, match.id);
+        const updated = await this.bracketRepository.attachMatch(node.id, input.leg, match.id);
         if (!updated) {
-            // Otra petición programó este cruce primero: se deshace el partido recién creado.
+            // Otra petición programó este partido primero: se deshace el recién creado.
             await this.matchRepository.delete(match.id);
             throw new BracketNodeAlreadyScheduledError();
         }

@@ -12,7 +12,9 @@ import { DrizzleBracketRepository } from './infrastructure/database/drizzle-brac
 import { BracketAdvancer } from './application/services/bracket-advancer.service.js';
 import { GenerateBracketUseCase } from './application/use-cases/generate-bracket.use-case.js';
 import { GetBracketUseCase } from './application/use-cases/get-bracket.use-case.js';
+import { DeleteBracketUseCase } from './application/use-cases/delete-bracket.use-case.js';
 import { ScheduleBracketMatchUseCase } from './application/use-cases/schedule-bracket-match.use-case.js';
+import { SetBracketNodePenaltiesUseCase } from './application/use-cases/set-bracket-node-penalties.use-case.js';
 import { BracketController } from './presentation/bracket.controller.js';
 import { createBracketRouter } from './presentation/bracket.routes.js';
 
@@ -49,6 +51,12 @@ const generateBracket = new GenerateBracketUseCase(
     bracketRepository,
 );
 
+const deleteBracket = new DeleteBracketUseCase(
+    phaseRepository,
+    tournamentMemberRepository,
+    bracketRepository,
+);
+
 const scheduleBracketMatch = new ScheduleBracketMatchUseCase(
     phaseRepository,
     bracketRepository,
@@ -56,7 +64,20 @@ const scheduleBracketMatch = new ScheduleBracketMatchUseCase(
     createMatch,
 );
 
+const setBracketNodePenalties = new SetBracketNodePenaltiesUseCase(
+    phaseRepository,
+    tournamentMemberRepository,
+    bracketRepository,
+    bracketAdvancer,
+);
+
 export const bracketRouter = createBracketRouter(
-    new BracketController(getBracket, generateBracket, scheduleBracketMatch),
+    new BracketController(
+        getBracket,
+        generateBracket,
+        scheduleBracketMatch,
+        setBracketNodePenalties,
+        deleteBracket,
+    ),
     requireAuth,
 );

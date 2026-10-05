@@ -27,6 +27,8 @@ export class GenerateBracketUseCase {
         userId: string;
         sourcePhaseId: string;
         thirdPlace: boolean;
+        twoLegged: boolean;
+        singleLegFinal: boolean;
     }): Promise<BracketNode[]> {
         const phase = await this.phaseRepository.findById(input.phaseId);
         if (!phase) throw new PhaseNotFoundError();
@@ -57,7 +59,14 @@ export class GenerateBracketUseCase {
 
         // Regenerar solo se permite mientras nada haya empezado.
         const existing = await this.bracketRepository.findByPhaseId(phase.id);
-        if (existing.some((node) => node.matchId !== null || node.winnerTeamId !== null)) {
+        if (
+            existing.some(
+                (node) =>
+                    node.matchId !== null ||
+                    node.secondLegMatchId !== null ||
+                    node.winnerTeamId !== null,
+            )
+        ) {
             throw new BracketInProgressError();
         }
 
@@ -73,7 +82,11 @@ export class GenerateBracketUseCase {
         );
         const seeds = ranked.map((item, index) => ({ teamId: item.teamId, seed: index + 1 }));
 
-        const drafts = buildBracket(seeds, { thirdPlace: input.thirdPlace });
-        return this.bracketRepository.replaceAll(phase.id, drafts);
+        const drafts = buildBracket(seeds, {
+            thirdPlace: input.thirdPlace,
+            twoLegged: input.twoLegged,
+            singleLegFinal: input.singleLegFinal,
+        });
+        return this.bracketRepository.replaceAll(phase.id, source.id, drafts);
     }
 }

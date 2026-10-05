@@ -77,3 +77,31 @@ export class BracketMatchTeamsLockedError extends AppError {
         );
     }
 }
+
+export class BracketLegNotAvailableError extends AppError {
+    constructor() {
+        super(409, 'BRACKET_LEG_NOT_AVAILABLE', 'This matchup is played in a single leg.');
+    }
+}
+
+export class BracketFirstLegRequiredError extends AppError {
+    constructor() {
+        super(409, 'BRACKET_FIRST_LEG_REQUIRED', 'Schedule the first leg before the second leg.');
+    }
+}
+
+export class SecondLegBeforeFirstError extends AppError {
+    constructor() {
+        super(400, 'SECOND_LEG_BEFORE_FIRST', 'The second leg must be scheduled after the first leg.');
+    }
+}
+
+export class BracketPenaltiesNotApplicableError extends AppError {
+    constructor() {
+        super(
+            409,
+            'BRACKET_PENALTIES_NOT_APPLICABLE',
+            'Penalties only apply when both legs are finished and the aggregate score is tied.',
+        );
+    }
+}

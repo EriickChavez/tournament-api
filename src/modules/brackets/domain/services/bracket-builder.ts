@@ -18,8 +18,18 @@ export interface BracketNodeDraft {
     round: number;
     /** Orden dentro de la ronda, desde 0. */
     position: number;
+    /** 1 = partido único; 2 = ida y vuelta. */
+    legs: 1 | 2;
     home: BracketSlot;
     away: BracketSlot;
+}
+
+export interface BracketOptions {
+    thirdPlace: boolean;
+    /** Las rondas del cuadro principal se juegan a ida y vuelta. Por defecto, partido único. */
+    twoLegged?: boolean;
+    /** Con ida y vuelta activo, la final se juega a partido único. Por defecto, sí. */
+    singleLegFinal?: boolean;
 }
 
 /**
@@ -48,11 +58,9 @@ function largestPowerOfTwo(n: number): number {
  * - Si no son potencia de 2, los peor rankeados juegan una ronda previa (repechaje) y los
  *   mejores pasan directo a la primera ronda; el ganador del repechaje ocupa el lugar del mejor seed.
  * - Cada nodo guarda el origen de sus equipos (equipo directo, ganador o perdedor de otro nodo).
+ * - Ida y vuelta opcional en el cuadro principal; repechaje y tercer lugar son partido único.
  */
-export function buildBracket(
-    seeds: BracketSeed[],
-    options: { thirdPlace: boolean },
-): BracketNodeDraft[] {
+export function buildBracket(seeds: BracketSeed[], options: BracketOptions): BracketNodeDraft[] {
     if (seeds.length < 2) throw new Error('A bracket needs at least 2 teams.');
 
     const bySeed = new Map<number, BracketSeed>();
@@ -73,6 +81,12 @@ export function buildBracket(
     const size = largestPowerOfTwo(total); // tamaño del cuadro principal
     const direct = 2 * size - total; // seeds que pasan directo: 1..direct
     const playInMatches = total - size;
+    const finalRound = Math.round(Math.log2(size));
+
+    // Ida y vuelta solo en el cuadro principal, y la final puede ser partido único.
+    const singleLegFinal = options.singleLegFinal ?? true;
+    const mainLegs = (round: number): 1 | 2 =>
+        options.twoLegged && !(round === finalRound && singleLegFinal) ? 2 : 1;
 
     const nodes: BracketNodeDraft[] = [];
 
@@ -87,6 +101,7 @@ export function buildBracket(
             stage: 'play_in',
             round: 0,
             position: k,
+            legs: 1,
             home: seedTeam(better),
             away: seedTeam(worse),
         });
@@ -107,6 +122,7 @@ export function buildBracket(
             stage: 'main',
             round: 1,
             position: i,
+            legs: mainLegs(1),
             home: slotForSeed(order[2 * i] as number),
             away: slotForSeed(order[2 * i + 1] as number),
         });
@@ -124,6 +140,7 @@ export function buildBracket(
                 stage: 'main',
                 round,
                 position: j,
+                legs: mainLegs(round),
                 home: { kind: 'winner', nodeKey: `main:${round - 1}:${2 * j}` },
                 away: { kind: 'winner', nodeKey: `main:${round - 1}:${2 * j + 1}` },
             });
@@ -138,6 +155,7 @@ export function buildBracket(
             stage: 'third_place',
             round,
             position: 0,
+            legs: 1,
             home: { kind: 'loser', nodeKey: `main:${semifinalRound}:0` },
             away: { kind: 'loser', nodeKey: `main:${semifinalRound}:1` },
         });

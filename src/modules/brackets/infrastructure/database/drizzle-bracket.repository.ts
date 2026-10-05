@@ -20,9 +20,11 @@ function mapNode(row: typeof phaseBracketNodes.$inferSelect): BracketNode {
     return {
         id: row.id,
         phaseId: row.phaseId,
+        sourcePhaseId: row.sourcePhaseId,
         stage: row.stage as BracketStage,
         round: row.round,
         position: row.position,
+        legs: row.legs === 2 ? 2 : 1,
         homeTeamId: row.homeTeamId,
         awayTeamId: row.awayTeamId,
         homeSeed: row.homeSeed,
@@ -32,6 +34,9 @@ function mapNode(row: typeof phaseBracketNodes.$inferSelect): BracketNode {
         awaySourceNodeId: row.awaySourceNodeId,
         awaySourceKind: row.awaySourceKind as BracketSourceKind | null,
         matchId: row.matchId,
+        secondLegMatchId: row.secondLegMatchId,
+        homePenalties: row.homePenalties,
+        awayPenalties: row.awayPenalties,
         winnerTeamId: row.winnerTeamId,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
@@ -65,7 +70,12 @@ export class DrizzleBracketRepository implements BracketRepository {
         const [row] = await db
             .select()
             .from(phaseBracketNodes)
-            .where(eq(phaseBracketNodes.matchId, matchId))
+            .where(
+                or(
+                    eq(phaseBracketNodes.matchId, matchId),
+                    eq(phaseBracketNodes.secondLegMatchId, matchId),
+                ),
+            )
             .limit(1);
         return row ? mapNode(row) : null;
     }
@@ -83,7 +93,20 @@ export class DrizzleBracketRepository implements BracketRepository {
         return rows.map(mapNode);
     }
 
-    async replaceAll(phaseId: string, drafts: BracketNodeDraft[]): Promise<BracketNode[]> {
+    async existsBySourcePhaseId(sourcePhaseId: string): Promise<boolean> {
+        const [row] = await db
+            .select({ id: phaseBracketNodes.id })
+            .from(phaseBracketNodes)
+            .where(eq(phaseBracketNodes.sourcePhaseId, sourcePhaseId))
+            .limit(1);
+        return row !== undefined;
+    }
+
+    async replaceAll(
+        phaseId: string,
+        sourcePhaseId: string,
+        drafts: BracketNodeDraft[],
+    ): Promise<BracketNode[]> {
         // Los ids se generan aquí para poder enlazar cada nodo con su origen en un solo INSERT.
         const idByKey = new Map(drafts.map((draft) => [draft.key, randomUUID()]));
         const idOf = (key: string): string => {
@@ -103,9 +126,11 @@ export class DrizzleBracketRepository implements BracketRepository {
             return {
                 id: idOf(draft.key),
                 phaseId,
+                sourcePhaseId,
                 stage: draft.stage,
                 round: draft.round,
                 position: draft.position,
+                legs: draft.legs,
                 homeTeamId: home.teamId,
                 homeSeed: home.seed,
                 homeSourceNodeId: home.sourceNodeId,
@@ -128,13 +153,27 @@ export class DrizzleBracketRepository implements BracketRepository {
         return this.findByPhaseId(phaseId);
     }
 
-    async attachMatch(nodeId: string, matchId: string): Promise<BracketNode | null> {
-        // El "match_id IS NULL" hace atómica la condición: si dos peticiones llegan a la vez,
+    async deleteByPhaseId(phaseId: string): Promise<void> {
+        await db.delete(phaseBracketNodes).where(eq(phaseBracketNodes.phaseId, phaseId));
+    }
+
+    async attachMatch(
+        nodeId: string,
+        leg: 1 | 2,
+        matchId: string,
+    ): Promise<BracketNode | null> {
+        // La condición "IS NULL" hace atómico el cupo: si dos peticiones llegan a la vez,
         // solo una actualiza la fila.
+        const slot = leg === 1 ? phaseBracketNodes.matchId : phaseBracketNodes.secondLegMatchId;
+        const values =
+            leg === 1
+                ? { matchId, updatedAt: new Date() }
+                : { secondLegMatchId: matchId, updatedAt: new Date() };
+
         const [row] = await db
             .update(phaseBracketNodes)
-            .set({ matchId, updatedAt: new Date() })
-            .where(and(eq(phaseBracketNodes.id, nodeId), isNull(phaseBracketNodes.matchId)))
+            .set(values)
+            .where(and(eq(phaseBracketNodes.id, nodeId), isNull(slot)))
             .returning();
         return row ? mapNode(row) : null;
     }
@@ -143,11 +182,18 @@ export class DrizzleBracketRepository implements BracketRepository {
         nodeId: string,
         winnerTeamId: string | null,
         slotUpdates: BracketSlotUpdate[],
+        penalties?: { home: number | null; away: number | null },
     ): Promise<void> {
         await db.transaction(async (tx) => {
             await tx
                 .update(phaseBracketNodes)
-                .set({ winnerTeamId, updatedAt: new Date() })
+                .set({
+                    winnerTeamId,
+                    ...(penalties
+                        ? { homePenalties: penalties.home, awayPenalties: penalties.away }
+                        : {}),
+                    updatedAt: new Date(),
+                })
                 .where(eq(phaseBracketNodes.id, nodeId));
 
             for (const update of slotUpdates) {

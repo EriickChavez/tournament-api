@@ -1,6 +1,7 @@
-import { and, asc, eq, or, sql } from 'drizzle-orm';
+import { and, asc, eq, isNull, ne, or, sql } from 'drizzle-orm';
 import { db } from '../../../../config/database.js';
 import { matches } from './schema.js';
+import { phases } from '../../../phases/infrastructure/database/schema.js';
 import type { MatchRepository } from '../../domain/repositories/match.repository.js';
 import type { Match, MatchStatus } from '../../domain/entities/match.entity.js';
 import { Paginated, PaginationParams, toOffset } from '../../../../shared/utils/pagination.js';
@@ -161,6 +162,7 @@ export class DrizzleMatchRepository implements MatchRepository {
         tournamentId: string,
         categoryId: string,
     ): Promise<Match[]> {
+        // Goleadores y tarjetas cuentan todos los partidos, incluida la eliminatoria.
         const rows = await db
             .select()
             .from(matches)
@@ -179,17 +181,21 @@ export class DrizzleMatchRepository implements MatchRepository {
         categoryId: string,
         teamId: string,
     ): Promise<Match[]> {
+        // Se usa para la tabla de posiciones por categoría: los partidos de una fase de
+        // eliminatoria no suman puntos ahí. Los partidos sin fase se siguen contando.
         const rows = await db
-            .select()
+            .select({ match: matches })
             .from(matches)
+            .leftJoin(phases, eq(matches.phaseId, phases.id))
             .where(
                 and(
                     eq(matches.tournamentId, tournamentId),
                     eq(matches.categoryId, categoryId),
                     eq(matches.status, 'finished'),
                     or(eq(matches.homeTeamId, teamId), eq(matches.awayTeamId, teamId)),
+                    or(isNull(phases.type), ne(phases.type, 'knockout')),
                 ),
             );
-        return rows.map(toMatch);
+        return rows.map((row) => toMatch(row.match));
     }
 }
