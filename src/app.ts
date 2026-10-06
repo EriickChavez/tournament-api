@@ -37,6 +37,7 @@ import {
     phaseClosureRouter,
 } from './modules/phases/phase-standings.module.js';
 import { bracketRouter } from './modules/brackets/brackets.module.js';
+import { categoryClosureRouter } from './modules/category-closures/category-closures.module.js';
 import { tournamentImportRouter } from './modules/imports/imports.module.js';
 
 const app = express();
@@ -76,6 +77,7 @@ app.use(
     '/tournaments/:tournamentId/categories/:categoryId/phases',
     tournamentCategoryPhaseRouter,
 );
+app.use('/tournaments/:tournamentId', categoryClosureRouter);
 app.use('/phases', phaseRouter);
 app.use('/phases/:phaseId/standings', phaseStandingsRouter);
 app.use('/phases/:phaseId/bracket', bracketRouter);

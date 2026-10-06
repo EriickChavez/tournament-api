@@ -18,6 +18,7 @@ export default defineConfig({
         './src/modules/tournament-sponsors/infrastructure/database/schema.ts',
         './src/modules/phases/infrastructure/database/schema.ts',
         './src/modules/brackets/infrastructure/database/schema.ts',
+        './src/modules/category-closures/infrastructure/database/schema.ts',
     ],
     out: './drizzle',
     dialect: 'postgresql',

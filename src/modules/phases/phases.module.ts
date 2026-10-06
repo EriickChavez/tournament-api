@@ -3,6 +3,7 @@ import { DrizzleTournamentRepository } from '../tournaments/infrastructure/datab
 import { DrizzleTournamentMemberRepository } from '../tournaments/infrastructure/database/drizzle-tournament-member.repository.js';
 import { DrizzleCategoryRepository } from '../categories/infrastructure/database/drizzle-category.repository.js';
 import { DrizzleTeamRepository } from '../teams/infrastructure/database/drizzle-team.repository.js';
+import { DrizzleCategoryClosureRepository } from '../category-closures/infrastructure/database/drizzle-category-closure.repository.js';
 import { requireAuth } from '../auth/auth.module.js';
 
 import { CreatePhaseUseCase } from './application/use-cases/create-phase.use-case.js';
@@ -27,12 +28,15 @@ const tournamentRepository = new DrizzleTournamentRepository();
 const tournamentMemberRepository = new DrizzleTournamentMemberRepository();
 const categoryRepository = new DrizzleCategoryRepository();
 const teamRepository = new DrizzleTeamRepository();
+// Solo se usa para saber si el campeonato de una categoría está cerrado.
+const categoryClosureRepository = new DrizzleCategoryClosureRepository();
 
 const createPhase = new CreatePhaseUseCase(
     phaseRepository,
     tournamentRepository,
     tournamentMemberRepository,
     categoryRepository,
+    categoryClosureRepository,
 );
 const listPhases = new ListPhasesUseCase(
     phaseRepository,

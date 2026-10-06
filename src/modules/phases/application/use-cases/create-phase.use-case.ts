@@ -10,6 +10,8 @@ import {
 } from '../../../tournaments/domain/errors/tournaments.errors.js';
 import { CategoryNotFoundError } from '../../../categories/domain/errors/category.errors.js';
 import { InvalidPhaseDateRangeError } from '../../domain/errors/phase.errors.js';
+import { CategoryClosedError } from '../../domain/errors/phase-category-closed.errors.js';
+import type { CategoryClosureChecker } from '../ports/category-closure-checker.port.js';
 
 export class CreatePhaseUseCase {
     constructor(
@@ -17,6 +19,7 @@ export class CreatePhaseUseCase {
         private readonly tournamentRepository: TournamentRepository,
         private readonly tournamentMemberRepository: TournamentMemberRepository,
         private readonly categoryRepository: CategoryRepository,
+        private readonly categoryClosureChecker: CategoryClosureChecker,
     ) { }
 
     async execute(input: {
@@ -44,6 +47,11 @@ export class CreatePhaseUseCase {
         );
         if (!member || member.roleId !== env.OWNER_ROLE_ID) {
             throw new NotTournamentOwnerError();
+        }
+
+        // Con el campeonato cerrado no se agregan fases a la categoría.
+        if (await this.categoryClosureChecker.isClosed(input.categoryId)) {
+            throw new CategoryClosedError();
         }
 
         if (input.startDate && input.endDate && input.endDate < input.startDate) {
