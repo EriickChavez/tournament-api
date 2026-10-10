@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { env } from '../../../../config/env.js';
+import type { CompetitionGuard } from '../../../../shared/ports/competition-guard.port.js';
 import type { TournamentRepository } from '../../../tournaments/domain/repositories/tournaments.repository.js';
 import type { TournamentMemberRepository } from '../../../tournaments/domain/repositories/tournaments-member.repository.js';
 import type { CategoryRepository } from '../../../categories/domain/repositories/category.repository.js';
@@ -42,6 +43,7 @@ export class ImportTournamentDataUseCase {
         private readonly tournamentRepository: TournamentRepository,
         private readonly tournamentMemberRepository: TournamentMemberRepository,
         private readonly categoryRepository: CategoryRepository,
+        private readonly competitionGuard: CompetitionGuard,
     ) { }
 
     async execute(input: {
@@ -192,6 +194,16 @@ export class ImportTournamentDataUseCase {
                 isCaptain: player.isCaptain,
                 role: player.role,
             });
+        }
+
+        // Solo se revisan las categorías a las que de verdad se agregarían equipos o jugadores:
+        // volver a subir el mismo archivo (todo omitido) no falla aunque la categoría ya empezara.
+        const touchedCategoryIds = new Set<string>([
+            ...planTeams.map((team) => team.categoryId),
+            ...planPlayers.map((player) => player.categoryId),
+        ]);
+        for (const categoryId of touchedCategoryIds) {
+            await this.competitionGuard.assertRosterOpen(categoryId);
         }
 
         if (allErrors.length > 0) {

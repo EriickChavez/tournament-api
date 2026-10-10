@@ -1,4 +1,5 @@
 import { env } from '../../../../config/env.js';
+import type { CompetitionGuard } from '../../../../shared/ports/competition-guard.port.js';
 import type { Player } from '../../domain/entities/player.entity.js';
 import type { PlayerRepository } from '../../domain/repositories/player.repository.js';
 import type { TournamentRepository } from '../../../tournaments/domain/repositories/tournaments.repository.js';
@@ -22,6 +23,7 @@ export class CreatePlayerUseCase {
         private readonly tournamentMemberRepository: TournamentMemberRepository,
         private readonly categoryRepository: CategoryRepository,
         private readonly teamRepository: TeamRepository,
+        private readonly competitionGuard: CompetitionGuard,
     ) { }
 
     async execute(input: {
@@ -60,6 +62,9 @@ export class CreatePlayerUseCase {
         ) {
             throw new InvalidTeamForPlayerError();
         }
+
+        // No se agregan jugadores a una categoría que ya empezó o terminó.
+        await this.competitionGuard.assertRosterOpen(input.categoryId);
 
         const existing = await this.playerRepository.findByTeamAndNumber(
             input.teamId,

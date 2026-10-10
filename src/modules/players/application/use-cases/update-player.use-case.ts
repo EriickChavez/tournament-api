@@ -1,4 +1,5 @@
 import { env } from '../../../../config/env.js';
+import type { CompetitionGuard } from '../../../../shared/ports/competition-guard.port.js';
 import type { Player } from '../../domain/entities/player.entity.js';
 import type { PlayerRepository } from '../../domain/repositories/player.repository.js';
 import type { TournamentMemberRepository } from '../../../tournaments/domain/repositories/tournaments-member.repository.js';
@@ -18,6 +19,7 @@ export class UpdatePlayerUseCase {
         private readonly tournamentMemberRepository: TournamentMemberRepository,
         private readonly categoryRepository: CategoryRepository,
         private readonly teamRepository: TeamRepository,
+        private readonly competitionGuard: CompetitionGuard,
     ) { }
 
     async execute(input: {
@@ -45,6 +47,18 @@ export class UpdatePlayerUseCase {
 
         const nextCategoryId = input.categoryId ?? player.categoryId;
         const nextTeamId = input.teamId ?? player.teamId;
+
+        // Corregir datos (nombre, dorsal, capitán...) se permite durante el torneo; con el campeonato cerrado no.
+        await this.competitionGuard.assertRosterEditable(player.categoryId);
+
+        // Pasar al jugador a otro equipo o categoría es un cambio de plantilla: solo antes de empezar.
+        const movesPlayer = nextCategoryId !== player.categoryId || nextTeamId !== player.teamId;
+        if (movesPlayer) {
+            await this.competitionGuard.assertRosterOpen(player.categoryId);
+            if (nextCategoryId !== player.categoryId) {
+                await this.competitionGuard.assertRosterOpen(nextCategoryId);
+            }
+        }
 
         if (input.categoryId) {
             const category = await this.categoryRepository.findById(input.categoryId);

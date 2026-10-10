@@ -1,4 +1,5 @@
 import { env } from '../../../../config/env.js';
+import type { CompetitionGuard } from '../../../../shared/ports/competition-guard.port.js';
 import type { Team } from '../../domain/entities/team.entity.js';
 import type { TeamRepository } from '../../domain/repositories/team.repository.js';
 import type { TournamentMemberRepository } from '../../../tournaments/domain/repositories/tournaments-member.repository.js';
@@ -15,6 +16,7 @@ export class UpdateTeamUseCase {
         private readonly teamRepository: TeamRepository,
         private readonly tournamentMemberRepository: TournamentMemberRepository,
         private readonly categoryRepository: CategoryRepository,
+        private readonly competitionGuard: CompetitionGuard,
     ) { }
 
     async execute(input: {
@@ -34,6 +36,15 @@ export class UpdateTeamUseCase {
         );
         if (!member || member.roleId !== env.OWNER_ROLE_ID) {
             throw new NotTournamentOwnerError();
+        }
+
+        // Corregir nombre, abreviatura o logo se permite durante el torneo; con el campeonato cerrado no.
+        await this.competitionGuard.assertRosterEditable(team.categoryId);
+
+        // Pasar un equipo de una categoría a otra es un cambio de plantilla: solo antes de empezar.
+        if (input.categoryId !== undefined && input.categoryId !== team.categoryId) {
+            await this.competitionGuard.assertRosterOpen(team.categoryId);
+            await this.competitionGuard.assertRosterOpen(input.categoryId);
         }
 
         if (input.categoryId) {

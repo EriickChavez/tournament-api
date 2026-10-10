@@ -9,6 +9,7 @@ import { ListTeamsUseCase } from './application/use-cases/list-teams.use-case.js
 import { TeamController } from './presentation/team.controller.js';
 import { createTeamRouter, createTournamentTeamRouter } from './presentation/team.routes.js';
 import { requireAuth } from '../auth/auth.module.js';
+import { competitionGuard } from '../competition-state/competition-state.module.js';
 
 const teamRepository = new DrizzleTeamRepository();
 const tournamentRepository = new DrizzleTournamentRepository();
@@ -20,9 +21,19 @@ const createTeamUseCase = new CreateTeamUseCase(
     tournamentRepository,
     tournamentMemberRepository,
     categoryRepository,
+    competitionGuard,
 );
-const updateTeamUseCase = new UpdateTeamUseCase(teamRepository, tournamentMemberRepository, categoryRepository);
-const deleteTeamUseCase = new DeleteTeamUseCase(teamRepository, tournamentMemberRepository);
+const updateTeamUseCase = new UpdateTeamUseCase(
+    teamRepository,
+    tournamentMemberRepository,
+    categoryRepository,
+    competitionGuard,
+);
+const deleteTeamUseCase = new DeleteTeamUseCase(
+    teamRepository,
+    tournamentMemberRepository,
+    competitionGuard,
+);
 const listTeamsUseCase = new ListTeamsUseCase(teamRepository, tournamentRepository);
 
 const teamController = new TeamController(createTeamUseCase, updateTeamUseCase, deleteTeamUseCase, listTeamsUseCase);

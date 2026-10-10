@@ -7,6 +7,7 @@ import { ImportTournamentDataUseCase } from './application/use-cases/import-tour
 import { ImportController } from './presentation/import.controller.js';
 import { createTournamentImportRouter } from './presentation/import.routes.js';
 import { requireAuth } from '../auth/auth.module.js';
+import { competitionGuard } from '../competition-state/competition-state.module.js';
 
 const importRepository = new DrizzleTournamentImportRepository();
 const spreadsheetParser = new ExcelJsSpreadsheetParser();
@@ -20,6 +21,7 @@ const importTournamentDataUseCase = new ImportTournamentDataUseCase(
     tournamentRepository,
     tournamentMemberRepository,
     categoryRepository,
+    competitionGuard,
 );
 
 const importController = new ImportController(importTournamentDataUseCase);
