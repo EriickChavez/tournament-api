@@ -57,8 +57,6 @@ export class UpdateMatchUseCase {
         phaseId?: string | null | undefined;
         phaseGroupId?: string | null | undefined;
         round?: number | null | undefined;
-        homeScore?: number | null | undefined;
-        awayScore?: number | null | undefined;
         homePenalties?: number | null | undefined;
         awayPenalties?: number | null | undefined;
     }): Promise<Match> {
@@ -77,7 +75,11 @@ export class UpdateMatchUseCase {
             await this.competitionGuard.assertNotFinished(input.categoryId);
         }
         // Valida los penales y limpia los que quedaron obsoletos si el marcador ya no es empate.
-        const penalties = resolvePenalties(match, input);
+        // homeScore/awayScore se derivan de los eventos de gol, no del input.
+        const penalties = resolvePenalties(match, {
+            homePenalties: input.homePenalties,
+            awayPenalties: input.awayPenalties,
+        });
 
         const nextCategoryId = input.categoryId ?? match.categoryId;
         const nextHomeTeamId = input.homeTeamId ?? match.homeTeamId;
@@ -137,8 +139,8 @@ export class UpdateMatchUseCase {
             homeTeamId: nextHomeTeamId,
             awayTeamId: nextAwayTeamId,
             status: input.status ?? match.status,
-            homeScore: input.homeScore !== undefined ? input.homeScore : match.homeScore,
-            awayScore: input.awayScore !== undefined ? input.awayScore : match.awayScore,
+            homeScore: match.homeScore,
+            awayScore: match.awayScore,
             homePenalties:
                 penalties.homePenalties !== undefined ? penalties.homePenalties : match.homePenalties,
             awayPenalties:
@@ -146,6 +148,8 @@ export class UpdateMatchUseCase {
         });
 
         const previousStatus = match.status;
+
+        const shouldDefaultScoresToZero = input.status === 'finished' && match.homeScore === null;
 
         const updated = await this.matchRepository.update(input.matchId, {
             categoryId: input.categoryId,
@@ -157,8 +161,7 @@ export class UpdateMatchUseCase {
             phaseId: input.phaseId,
             phaseGroupId: input.phaseGroupId,
             round: input.round,
-            homeScore: input.homeScore,
-            awayScore: input.awayScore,
+            ...(shouldDefaultScoresToZero ? { homeScore: 0, awayScore: 0 } : {}),
             homePenalties: penalties.homePenalties,
             awayPenalties: penalties.awayPenalties,
             updatedByUserId: input.userId,

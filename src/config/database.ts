@@ -8,7 +8,7 @@ export const pool = new Pool({
     connectionString: env.DATABASE_URL,
     max: 10,
     idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 5_000,
+    connectionTimeoutMillis: 15_000,
     statement_timeout: 10_000,
     query_timeout: 10_000,
 });

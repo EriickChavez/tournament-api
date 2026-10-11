@@ -87,6 +87,14 @@ export class CreateMatchEventUseCase {
             createdByUserId: input.userId,
         });
 
+        // Sincronizar marcador del partido contando los eventos de gol.
+        if (input.eventType === 'gol') {
+            const allEvents = await this.matchEventRepository.findByMatchId(input.matchId);
+            const homeScore = allEvents.filter((e) => e.eventType === 'gol' && e.teamId === match.homeTeamId).length;
+            const awayScore = allEvents.filter((e) => e.eventType === 'gol' && e.teamId === match.awayTeamId).length;
+            await this.matchRepository.update(input.matchId, { homeScore, awayScore, updatedByUserId: input.userId });
+        }
+
         // El servicio solo cuenta partidos finished; si aún no lo está, no cambia nada.
         await this.matchStatsRecalculator.recalculateForMatch(input.matchId);
 

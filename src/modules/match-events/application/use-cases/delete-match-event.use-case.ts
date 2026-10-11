@@ -35,7 +35,16 @@ export class DeleteMatchEventUseCase {
         if (match) await this.competitionGuard.assertNotFinished(match.categoryId);
 
         const matchId = event.matchId;
+        const wasGoal = event.eventType === 'gol';
         await this.matchEventRepository.delete(input.matchEventId);
+
+        // Si se borró un gol, sincronizar marcador del partido.
+        if (wasGoal && match) {
+            const allEvents = await this.matchEventRepository.findByMatchId(matchId);
+            const homeScore = allEvents.filter((e) => e.eventType === 'gol' && e.teamId === match.homeTeamId).length;
+            const awayScore = allEvents.filter((e) => e.eventType === 'gol' && e.teamId === match.awayTeamId).length;
+            await this.matchRepository.update(matchId, { homeScore, awayScore, updatedByUserId: input.userId });
+        }
 
         await this.matchStatsRecalculator.recalculateForMatch(matchId);
     }

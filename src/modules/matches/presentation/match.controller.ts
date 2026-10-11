@@ -94,8 +94,6 @@ export class MatchController {
                 phaseId: input.phaseId,
                 phaseGroupId: input.phaseGroupId,
                 round: input.round,
-                homeScore: input.homeScore,
-                awayScore: input.awayScore,
                 homePenalties: input.homePenalties,
                 awayPenalties: input.awayPenalties,
             });
