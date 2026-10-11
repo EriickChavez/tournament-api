@@ -19,6 +19,7 @@ import {
 } from '../../domain/errors/match.errors.js';
 import { resolvePenalties } from '../../domain/services/match-outcome.js';
 import type { MatchBracketSync } from '../ports/match-bracket-sync.port.js';
+import { CompetitionGuard } from '../../../../shared/ports/competition-guard.port.js';
 
 /** Puerto mínimo (mismo shape que en match-events). */
 export interface MatchStatsRecalculator {
@@ -40,6 +41,7 @@ export class UpdateMatchUseCase {
         private readonly phaseRepository: PhaseRepository,
         private readonly phaseGroupRepository: PhaseGroupRepository,
         // Opcional: lo conecta el módulo de llaves para que el ganador avance solo.
+        private readonly competitionGuard: CompetitionGuard,
         private readonly matchBracketSync?: MatchBracketSync,
     ) { }
 
@@ -70,7 +72,10 @@ export class UpdateMatchUseCase {
         if (!member || !isOwnerOrAdmin(member.roleId)) {
             throw new NotTournamentOwnerOrAdminError();
         }
-
+        await this.competitionGuard.assertNotFinished(match.categoryId);
+        if (input.categoryId && input.categoryId !== match.categoryId) {
+            await this.competitionGuard.assertNotFinished(input.categoryId);
+        }
         // Valida los penales y limpia los que quedaron obsoletos si el marcador ya no es empate.
         const penalties = resolvePenalties(match, input);
 

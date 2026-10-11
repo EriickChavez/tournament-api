@@ -25,31 +25,21 @@ const categoryRepository = new DrizzleCategoryRepository();
 const teamRepository = new DrizzleTeamRepository();
 const phaseRepository = new DrizzlePhaseRepository();
 const phaseGroupRepository = new DrizzlePhaseGroupRepository();
+import { competitionGuard } from '../competition-state/competition-state.module.js';
 
 const createMatchUseCase = new CreateMatchUseCase(
-    matchRepository,
-    tournamentRepository,
-    tournamentMemberRepository,
-    categoryRepository,
-    teamRepository,
-    phaseRepository,
-    phaseGroupRepository,
+    matchRepository, tournamentRepository, tournamentMemberRepository,
+    categoryRepository, teamRepository, phaseRepository, phaseGroupRepository,
+    competitionGuard,
 );
 const updateMatchUseCase = new UpdateMatchUseCase(
-    matchRepository,
-    tournamentMemberRepository,
-    categoryRepository,
-    teamRepository,
-    recalculateMatchStatsService,
-    phaseRepository,
-    phaseGroupRepository,
-    bracketAdvancer,
+    matchRepository, tournamentMemberRepository, categoryRepository, teamRepository,
+    recalculateMatchStatsService, phaseRepository, phaseGroupRepository,
+    competitionGuard, bracketAdvancer,
 );
 const deleteMatchUseCase = new DeleteMatchUseCase(
-    matchRepository,
-    tournamentMemberRepository,
-    recalculateMatchStatsService,
-    bracketAdvancer,
+    matchRepository, tournamentMemberRepository, recalculateMatchStatsService,
+    competitionGuard, bracketAdvancer,
 );
 const listMatchesUseCase = new ListMatchesUseCase(
     matchRepository,

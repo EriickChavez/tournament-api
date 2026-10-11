@@ -11,6 +11,7 @@ import {
     InvalidPlayerForMatchEventError,
     InvalidAssistForMatchEventError,
 } from '../../domain/errors/match-event.errors.js';
+import { CompetitionGuard } from '../../../../shared/ports/competition-guard.port.js';
 
 /** Puerto mínimo para no acoplar el use case a la clase concreta de standings. */
 export interface MatchStatsRecalculator {
@@ -28,6 +29,7 @@ export class CreateMatchEventUseCase {
         private readonly tournamentMemberRepository: TournamentMemberRepository,
         private readonly playerRepository: PlayerRepository,
         private readonly matchStatsRecalculator: MatchStatsRecalculator,
+        private readonly competitionGuard: CompetitionGuard,
     ) { }
 
     async execute(input: {
@@ -50,11 +52,11 @@ export class CreateMatchEventUseCase {
         if (!member || !isOwnerOrAdmin(member.roleId)) {
             throw new NotTournamentOwnerOrAdminError();
         }
+        await this.competitionGuard.assertNotFinished(match.categoryId);
 
         if (input.teamId !== match.homeTeamId && input.teamId !== match.awayTeamId) {
             throw new InvalidTeamForMatchEventError();
         }
-
         if (input.playerId) {
             const player = await this.playerRepository.findById(input.playerId);
             if (!player || player.teamId !== input.teamId) {

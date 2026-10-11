@@ -27,6 +27,8 @@ const phaseClosureRepository = new DrizzlePhaseClosureRepository();
 const matchRepository = new DrizzleMatchRepository();
 const matchEventRepository = new DrizzleMatchEventRepository();
 const tournamentMemberRepository = new DrizzleTournamentMemberRepository();
+import { competitionGuard } from '../competition-state/competition-state.module.js';
+
 // Solo se usa para saber si hay una llave construida con los clasificados de una fase.
 const bracketRepository = new DrizzleBracketRepository();
 
@@ -46,6 +48,7 @@ const setPhaseManualRanks = new SetPhaseManualRanksUseCase(
     phaseTeamRepository,
     phaseManualRankRepository,
     tournamentMemberRepository,
+    competitionGuard,
 );
 
 const closePhase = new ClosePhaseUseCase(

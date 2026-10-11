@@ -13,6 +13,7 @@ import {
     PhaseGroupNotFoundError,
     TeamNotInCategoryError,
 } from '../../domain/errors/phase.errors.js';
+import { PhaseStructureGuardService } from '../services/phase-structure-guard.service.js';
 
 export class SyncPhaseTeamsUseCase {
     constructor(
@@ -21,6 +22,7 @@ export class SyncPhaseTeamsUseCase {
         private readonly phaseTeamRepository: PhaseTeamRepository,
         private readonly teamRepository: TeamRepository,
         private readonly tournamentMemberRepository: TournamentMemberRepository,
+        private readonly phaseStructureGuard: PhaseStructureGuardService,
     ) { }
 
     async execute(input: {
@@ -57,7 +59,7 @@ export class SyncPhaseTeamsUseCase {
                 }
             }
         }
-
+        await this.phaseStructureGuard.assertNoMatches(phase.id);
         const groupIds = [
             ...new Set(
                 input.teams

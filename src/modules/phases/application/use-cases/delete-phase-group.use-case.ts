@@ -9,12 +9,14 @@ import {
     PhaseGroupNotFoundError,
     PhaseNotFoundError,
 } from '../../domain/errors/phase.errors.js';
+import { PhaseStructureGuardService } from '../services/phase-structure-guard.service.js';
 
 export class DeletePhaseGroupUseCase {
     constructor(
         private readonly phaseRepository: PhaseRepository,
         private readonly phaseGroupRepository: PhaseGroupRepository,
         private readonly tournamentMemberRepository: TournamentMemberRepository,
+        private readonly phaseStructureGuard: PhaseStructureGuardService,
     ) { }
 
     async execute(input: { id: string; userId: string }): Promise<void> {
@@ -31,7 +33,7 @@ export class DeletePhaseGroupUseCase {
         if (!member || member.roleId !== env.OWNER_ROLE_ID) {
             throw new NotTournamentOwnerError();
         }
-
+        await this.phaseStructureGuard.assertNoMatches(phase.id);
         await this.phaseGroupRepository.delete(input.id);
     }
 }

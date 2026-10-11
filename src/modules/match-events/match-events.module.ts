@@ -14,19 +14,18 @@ const matchEventRepository = new DrizzleMatchEventRepository();
 const matchRepository = new DrizzleMatchRepository();
 const tournamentMemberRepository = new DrizzleTournamentMemberRepository();
 const playerRepository = new DrizzlePlayerRepository();
+import { competitionGuard } from '../competition-state/competition-state.module.js';
 
 const createMatchEventUseCase = new CreateMatchEventUseCase(
-    matchEventRepository,
-    matchRepository,
-    tournamentMemberRepository,
-    playerRepository,
-    recalculateMatchStatsService,
+    matchEventRepository, matchRepository, tournamentMemberRepository,
+    playerRepository, recalculateMatchStatsService, competitionGuard,
 );
+
 const deleteMatchEventUseCase = new DeleteMatchEventUseCase(
-    matchEventRepository,
-    tournamentMemberRepository,
-    recalculateMatchStatsService,
+    matchEventRepository, tournamentMemberRepository, recalculateMatchStatsService,
+    matchRepository, competitionGuard,
 );
+
 const listMatchEventsUseCase = new ListMatchEventsUseCase(matchEventRepository, matchRepository);
 
 const matchEventController = new MatchEventController(

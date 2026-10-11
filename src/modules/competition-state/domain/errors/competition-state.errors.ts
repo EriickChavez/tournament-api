@@ -15,7 +15,7 @@ export class CategoryFinishedError extends AppError {
         super(
             409,
             'CATEGORY_FINISHED',
-            'The championship of this category is closed, so its teams and players can no longer be changed. Reopen the championship first.',
+            'The championship of this category is closed, so it can no longer be changed (teams, players, matches or results). Reopen the championship first.',
         );
     }
 }

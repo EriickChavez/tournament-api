@@ -4,6 +4,8 @@ import type { TournamentMemberRepository } from '../../../tournaments/domain/rep
 import { NotTournamentOwnerOrAdminError } from '../../../tournaments/domain/errors/tournaments.errors.js';
 import { MatchEventNotFoundError } from '../../domain/errors/match-event.errors.js';
 import type { MatchStatsRecalculator } from './create-match-event.use-case.js';
+import type { MatchRepository } from '../../../matches/domain/repositories/match.repository.js';
+import { CompetitionGuard } from '../../../../shared/ports/competition-guard.port.js';
 
 function isOwnerOrAdmin(roleId: string): boolean {
     return roleId === env.OWNER_ROLE_ID || roleId === env.ADMIN_ROLE_ID;
@@ -14,6 +16,8 @@ export class DeleteMatchEventUseCase {
         private readonly matchEventRepository: MatchEventRepository,
         private readonly tournamentMemberRepository: TournamentMemberRepository,
         private readonly matchStatsRecalculator: MatchStatsRecalculator,
+        private readonly matchRepository: MatchRepository,
+        private readonly competitionGuard: CompetitionGuard,
     ) { }
 
     async execute(input: { matchEventId: string; userId: string }): Promise<void> {
@@ -27,6 +31,8 @@ export class DeleteMatchEventUseCase {
         if (!member || !isOwnerOrAdmin(member.roleId)) {
             throw new NotTournamentOwnerOrAdminError();
         }
+        const match = await this.matchRepository.findById(event.matchId);
+        if (match) await this.competitionGuard.assertNotFinished(match.categoryId);
 
         const matchId = event.matchId;
         await this.matchEventRepository.delete(input.matchEventId);

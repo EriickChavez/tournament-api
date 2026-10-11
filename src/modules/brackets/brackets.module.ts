@@ -27,21 +27,17 @@ const categoryRepository = new DrizzleCategoryRepository();
 const teamRepository = new DrizzleTeamRepository();
 const matchRepository = new DrizzleMatchRepository();
 const bracketRepository = new DrizzleBracketRepository();
+import { competitionGuard } from '../competition-state/competition-state.module.js';
 
 // Lo usa el módulo de partidos para que el ganador avance solo (mismo patrón que standings).
 export const bracketAdvancer = new BracketAdvancer(bracketRepository, matchRepository);
 
 // Misma creación de partidos que usa /tournaments/:id/matches (los repositorios no guardan estado).
 const createMatch = new CreateMatchUseCase(
-    matchRepository,
-    tournamentRepository,
-    tournamentMemberRepository,
-    categoryRepository,
-    teamRepository,
-    phaseRepository,
-    phaseGroupRepository,
+    matchRepository, tournamentRepository, tournamentMemberRepository,
+    categoryRepository, teamRepository, phaseRepository, phaseGroupRepository,
+    competitionGuard,
 );
-
 const getBracket = new GetBracketUseCase(phaseRepository, bracketRepository);
 
 const generateBracket = new GenerateBracketUseCase(
@@ -64,11 +60,10 @@ const scheduleBracketMatch = new ScheduleBracketMatchUseCase(
     createMatch,
 );
 
+
 const setBracketNodePenalties = new SetBracketNodePenaltiesUseCase(
-    phaseRepository,
-    tournamentMemberRepository,
-    bracketRepository,
-    bracketAdvancer,
+    phaseRepository, tournamentMemberRepository, bracketRepository,
+    bracketAdvancer, competitionGuard,
 );
 
 export const bracketRouter = createBracketRouter(

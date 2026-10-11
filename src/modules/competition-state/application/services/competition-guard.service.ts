@@ -32,4 +32,9 @@ export class CompetitionGuardService implements CompetitionGuard {
             throw new CategoryFinishedError();
         }
     }
+    async assertNotFinished(categoryId: string): Promise<void> {
+        if (await this.categoryClosureRepository.isClosed(categoryId)) {
+            throw new CategoryFinishedError();
+        }
+    }
 }

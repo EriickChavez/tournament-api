@@ -16,6 +16,7 @@ import {
     TeamNotInPhaseError,
     DuplicateManualRankError,
 } from '../../domain/errors/phase-standings.errors.js';
+import { CompetitionGuard } from '../../../../shared/ports/competition-guard.port.js';
 
 export class SetPhaseManualRanksUseCase {
     constructor(
@@ -23,6 +24,7 @@ export class SetPhaseManualRanksUseCase {
         private readonly phaseTeamRepository: PhaseTeamRepository,
         private readonly phaseManualRankRepository: PhaseManualRankRepository,
         private readonly tournamentMemberRepository: TournamentMemberRepository,
+        private readonly competitionGuard: CompetitionGuard,
     ) { }
 
     async execute(input: {
@@ -45,7 +47,7 @@ export class SetPhaseManualRanksUseCase {
         ) {
             throw new NotTournamentOwnerOrAdminError();
         }
-
+        await this.competitionGuard.assertNotFinished(phase.categoryId);
         const phaseTeams = await this.phaseTeamRepository.findByPhaseId(phase.id);
         const groupByTeam = new Map(phaseTeams.map((pt) => [pt.teamId, pt.phaseGroupId]));
 

@@ -20,6 +20,7 @@ import {
     InvalidPhaseForMatchError,
     InvalidPhaseGroupForMatchError,
 } from '../../domain/errors/match.errors.js';
+import { CompetitionGuard } from '../../../../shared/ports/competition-guard.port.js';
 
 function isOwnerOrAdmin(roleId: string): boolean {
     return roleId === env.OWNER_ROLE_ID || roleId === env.ADMIN_ROLE_ID;
@@ -34,6 +35,7 @@ export class CreateMatchUseCase {
         private readonly teamRepository: TeamRepository,
         private readonly phaseRepository: PhaseRepository,
         private readonly phaseGroupRepository: PhaseGroupRepository,
+        private readonly competitionGuard: CompetitionGuard,
     ) { }
 
     async execute(input: {
@@ -59,7 +61,7 @@ export class CreateMatchUseCase {
         if (!member || !isOwnerOrAdmin(member.roleId)) {
             throw new NotTournamentOwnerOrAdminError();
         }
-
+        await this.competitionGuard.assertNotFinished(input.categoryId);
         if (input.homeTeamId === input.awayTeamId) {
             throw new SameTeamMatchError();
         }

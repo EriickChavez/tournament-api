@@ -7,6 +7,7 @@ import type { BracketNode } from '../../domain/entities/bracket-node.entity.js';
 import type { BracketRepository } from '../../domain/repositories/bracket.repository.js';
 import { BracketNodeNotFoundError } from '../../domain/errors/bracket.errors.js';
 import type { BracketAdvancer } from '../services/bracket-advancer.service.js';
+import { CompetitionGuard } from '../../../../shared/ports/competition-guard.port.js';
 
 export class SetBracketNodePenaltiesUseCase {
     constructor(
@@ -14,6 +15,7 @@ export class SetBracketNodePenaltiesUseCase {
         private readonly tournamentMemberRepository: TournamentMemberRepository,
         private readonly bracketRepository: BracketRepository,
         private readonly bracketAdvancer: BracketAdvancer,
+        private readonly competitionGuard: CompetitionGuard,
     ) { }
 
     async execute(input: {
@@ -40,6 +42,8 @@ export class SetBracketNodePenaltiesUseCase {
         ) {
             throw new NotTournamentOwnerOrAdminError();
         }
+
+        await this.competitionGuard.assertNotFinished(phase.categoryId);
 
         await this.bracketAdvancer.applyNodePenalties(node, input.penalties);
 

@@ -5,6 +5,7 @@ import { NotTournamentOwnerOrAdminError } from '../../../tournaments/domain/erro
 import { MatchNotFoundError } from '../../domain/errors/match.errors.js';
 import type { MatchStatsRecalculator } from './update-match.use-case.js';
 import type { MatchBracketSync } from '../ports/match-bracket-sync.port.js';
+import { CompetitionGuard } from '../../../../shared/ports/competition-guard.port.js';
 
 function isOwnerOrAdmin(roleId: string): boolean {
     return roleId === env.OWNER_ROLE_ID || roleId === env.ADMIN_ROLE_ID;
@@ -16,6 +17,7 @@ export class DeleteMatchUseCase {
         private readonly tournamentMemberRepository: TournamentMemberRepository,
         private readonly matchStatsRecalculator: MatchStatsRecalculator,
         // Opcional: lo conecta el módulo de llaves para liberar el cruce al borrar su partido.
+        private readonly competitionGuard: CompetitionGuard,
         private readonly matchBracketSync?: MatchBracketSync,
     ) { }
 
@@ -30,11 +32,11 @@ export class DeleteMatchUseCase {
         if (!member || !isOwnerOrAdmin(member.roleId)) {
             throw new NotTournamentOwnerOrAdminError();
         }
+        await this.competitionGuard.assertNotFinished(match.categoryId);
 
         // Si el partido es de una llave: se valida que no rompa un cruce ya programado y se
         // dejan por definir el ganador y los equipos que dependían de él.
         await this.matchBracketSync?.releaseForDeletion(input.matchId);
-
         await this.matchRepository.delete(input.matchId);
 
         // Los eventos se borran en cascada, pero posiciones/goleadores/tarjetas son

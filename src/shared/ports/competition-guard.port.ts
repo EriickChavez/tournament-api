@@ -13,4 +13,6 @@ export interface CompetitionGuard {
      * durante el torneo y se bloquea al cerrar el campeonato. Lanza si ya terminó.
      */
     assertRosterEditable(categoryId: string): Promise<void>;
+    /** Cualquier cambio en la competencia (partidos, resultados, eventos): solo antes de cerrar el campeonato. */
+    assertNotFinished(categoryId: string): Promise<void>;
 }
