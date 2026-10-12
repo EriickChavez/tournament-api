@@ -5,10 +5,14 @@ import type { DeleteMatchUseCase } from '../application/use-cases/delete-match.u
 import type { ListMatchesUseCase } from '../application/use-cases/list-matches.use-case.js';
 import type { GetMatchUseCase } from '../application/use-cases/get-match.use-case.js';
 import type { MatchLifecycleUseCase } from '../application/use-cases/match-lifecycle.use-case.js';
+import type { MatchRefereesUseCase } from '../application/use-cases/match-referees.use-case.js';
+import type { ListMyMatchesUseCase } from '../application/use-cases/list-my-matches.use-case.js';
 import {
     createMatchSchema,
     updateMatchSchema,
     listMatchesQuerySchema,
+    listMyMatchesQuerySchema,
+    setMatchRefereesSchema,
 } from './schemas/match.schemas.js';
 import { toPublicMatch, toPublicMatchDetails } from './utils/public-match.js';
 import { AppError } from '../../../shared/errors/app-error.js';
@@ -22,6 +26,8 @@ export class MatchController {
         private readonly listMatchesUseCase: ListMatchesUseCase,
         private readonly getMatchUseCase: GetMatchUseCase,
         private readonly matchLifecycleUseCase: MatchLifecycleUseCase,
+        private readonly matchRefereesUseCase: MatchRefereesUseCase,
+        private readonly listMyMatchesUseCase: ListMyMatchesUseCase,
     ) { }
 
     listByTournament = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -40,6 +46,29 @@ export class MatchController {
     ): Promise<void> => {
         try {
             await this.respondList(req, res);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    /** Partidos asignados al usuario autenticado (app del árbitro). */
+    listMine = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            if (!req.userId) throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
+            const { page, limit, from, to, ...filters } = listMyMatchesQuerySchema.parse(req.query);
+            const { items, total } = await this.listMyMatchesUseCase.execute(
+                req.userId,
+                { page, limit },
+                {
+                    ...filters,
+                    from: from ? new Date(from) : undefined,
+                    to: to ? new Date(to) : undefined,
+                },
+            );
+            res.status(200).json({
+                matches: items.map(toPublicMatchDetails),
+                pagination: buildPaginationMeta({ page, limit }, total),
+            });
         } catch (error) {
             next(error);
         }
@@ -139,6 +168,34 @@ export class MatchController {
                 userId: req.userId,
             });
             res.status(200).json({ match: toPublicMatch(match) });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    getReferees = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            if (!req.userId) throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
+            const refereeUserIds = await this.matchRefereesUseCase.list({
+                matchId: req.params.id as string,
+                userId: req.userId,
+            });
+            res.status(200).json({ refereeUserIds });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    setReferees = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            if (!req.userId) throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
+            const input = setMatchRefereesSchema.parse(req.body);
+            const refereeUserIds = await this.matchRefereesUseCase.set({
+                matchId: req.params.id as string,
+                userId: req.userId,
+                refereeUserIds: input.userIds,
+            });
+            res.status(200).json({ refereeUserIds });
         } catch (error) {
             next(error);
         }

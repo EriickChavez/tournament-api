@@ -2,11 +2,17 @@ import { env } from '../../../../config/env.js';
 import type { Match } from '../../domain/entities/match.entity.js';
 import type { MatchRepository } from '../../domain/repositories/match.repository.js';
 import type { MatchLifecycleRepository } from '../../domain/repositories/match-lifecycle.repository.js';
+import type { MatchRefereeRepository } from '../../domain/repositories/match-referee.repository.js';
 import type { MatchEventRepository } from '../../../match-events/domain/repositories/match-event.repository.js';
 import type { TournamentMemberRepository } from '../../../tournaments/domain/repositories/tournaments-member.repository.js';
 import { NotTournamentOwnerOrAdminError } from '../../../tournaments/domain/errors/tournaments.errors.js';
 import { computeScoreFromEvents } from '../../../match-events/domain/services/score-from-events.js';
-import { MatchNotFoundError, InvalidMatchTransitionError } from '../../domain/errors/match.errors.js';
+import {
+    MatchNotFoundError,
+    InvalidMatchTransitionError,
+    NotAssignedToMatchError,
+} from '../../domain/errors/match.errors.js';
+import { canOperateMatch } from '../../domain/services/match-referee-access.js';
 import type { MatchBracketSync } from '../ports/match-bracket-sync.port.js';
 import type { MatchStatsRecalculator } from './update-match.use-case.js';
 import { CompetitionGuard } from '../../../../shared/ports/competition-guard.port.js';
@@ -28,6 +34,7 @@ export class MatchLifecycleUseCase {
         private readonly tournamentMemberRepository: TournamentMemberRepository,
         private readonly matchStatsRecalculator: MatchStatsRecalculator,
         private readonly competitionGuard: CompetitionGuard,
+        private readonly matchRefereeRepository: MatchRefereeRepository,
         private readonly matchBracketSync?: MatchBracketSync,
     ) { }
 
@@ -112,10 +119,22 @@ export class MatchLifecycleUseCase {
             match.tournamentId,
             input.userId,
         );
-        // Cuando "admin" pase a "referee", aquí se separa quién puede reabrir.
         if (!member || !isOwnerOrAdmin(member.roleId)) {
             throw new NotTournamentOwnerOrAdminError();
         }
+
+        // Con árbitros asignados, solo ellos (y el owner) operan el partido.
+        const assignedUserIds = await this.matchRefereeRepository.findUserIdsByMatchId(match.id);
+        if (
+            !canOperateMatch({
+                isOwner: member.roleId === env.OWNER_ROLE_ID,
+                assignedUserIds,
+                userId: input.userId,
+            })
+        ) {
+            throw new NotAssignedToMatchError();
+        }
+
         await this.competitionGuard.assertNotFinished(match.categoryId);
         return match;
     }

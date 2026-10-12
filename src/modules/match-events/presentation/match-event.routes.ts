@@ -19,6 +19,7 @@ export function createStandaloneMatchEventRouter(
     requireAuth: ReturnType<typeof createRequireAuth>,
 ): Router {
     const router = Router();
+    router.patch('/:id', requireAuth, controller.update);
     router.delete('/:id', requireAuth, controller.delete);
     return router;
 }

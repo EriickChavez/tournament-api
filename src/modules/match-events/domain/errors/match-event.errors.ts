@@ -23,3 +23,41 @@ export class InvalidAssistForMatchEventError extends AppError {
         super(400, 'INVALID_ASSIST_FOR_EVENT', 'An assist can only be set for a "gol" event.');
     }
 }
+
+export class InvalidSubstitutionError extends AppError {
+    constructor() {
+        super(
+            400,
+            'INVALID_SUBSTITUTION',
+            'A "cambio" needs the player leaving (playerId) and the player entering (substitutePlayerId), different players of the same team. The substitute can only be set on "cambio" events.',
+        );
+    }
+}
+
+export class InvalidOccurredAtError extends AppError {
+    constructor() {
+        super(400, 'INVALID_OCCURRED_AT', 'occurredAt cannot be in the future.');
+    }
+}
+
+export class PlayerAlreadySentOffError extends AppError {
+    constructor() {
+        super(409, 'PLAYER_ALREADY_SENT_OFF', 'This player was already sent off in this match.');
+    }
+}
+
+export class DerivedMatchEventError extends AppError {
+    constructor() {
+        super(
+            409,
+            'DERIVED_MATCH_EVENT',
+            'This event was generated automatically (double yellow). Delete the second yellow card instead.',
+        );
+    }
+}
+
+export class InvalidMatchEventUpdateError extends AppError {
+    constructor(message: string) {
+        super(400, 'INVALID_EVENT_UPDATE', message);
+    }
+}

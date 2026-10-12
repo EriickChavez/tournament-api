@@ -2,7 +2,12 @@ import type { Request, Response, NextFunction } from 'express';
 import type { RegisterUserUseCase } from '../application/use-cases/register-user.use-case.js';
 import type { LoginUserUseCase } from '../application/use-cases/login-user.use-case.js';
 import { registerSchema, loginSchema, lookupUserQuerySchema } from './schemas/auth.schemas.js';
-import { clearSessionCookie, getSessionIdFromRequest, setSessionCookie } from './utils/session-cookie.js';
+import {
+    clearSessionCookie,
+    extractSessionId,
+    isMobileClient,
+    setSessionCookie,
+} from './utils/session-cookie.js';
 import { toPublicUser } from './utils/public-user.js';
 import { LogoutUserUseCase } from '../application/use-cases/logout-user.use-case.js';
 import { AppError } from '../../../shared/errors/app-error.js';
@@ -36,6 +41,18 @@ export class AuthController {
         try {
             const input = loginSchema.parse(req.body);
             const { user, session } = await this.loginUseCase.execute(input);
+
+            // Apps nativas (X-Client-Type: mobile): el token va en el cuerpo, sin cookie,
+            // y se envía después en `Authorization: Bearer <sessionToken>`.
+            if (isMobileClient(req)) {
+                res.status(200).json({
+                    user: toPublicUser(user),
+                    sessionToken: session.id,
+                    expiresAt: session.expiresAt.toISOString(),
+                });
+                return;
+            }
+
             setSessionCookie(res, session);
             res.status(200).json({ user: toPublicUser(user) });
         } catch (error) {
@@ -44,9 +61,9 @@ export class AuthController {
     };
     logout = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const sessionId = getSessionIdFromRequest(req.cookies as Record<string, unknown>);
-            if (sessionId) {
-                await this.logoutUseCase.execute(sessionId);
+            const found = extractSessionId(req);
+            if (found) {
+                await this.logoutUseCase.execute(found.sessionId);
             }
             clearSessionCookie(res);
             res.status(204).send();

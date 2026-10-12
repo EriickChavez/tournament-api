@@ -2,9 +2,8 @@ import type { Request, Response, NextFunction } from 'express';
 import type { SessionRepository } from '../../domain/repositories/session.repository.js';
 import type { UserRepository } from '../../domain/repositories/user.repository.js';
 import { AppError } from '../../../../shared/errors/app-error.js';
-import { setSessionCookie } from '../utils/session-cookie.js';
+import { extractSessionId, setSessionCookie } from '../utils/session-cookie.js';
 
-const COOKIE_NAME = 'session_id';
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const RENEWAL_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -27,14 +26,13 @@ export function createRequireAuth(
         next: NextFunction,
     ): Promise<void> {
         try {
-            const cookies = req.cookies as Record<string, unknown>;
-            const sessionId = typeof cookies[COOKIE_NAME] === 'string' ? cookies[COOKIE_NAME] : undefined;
+            const found = extractSessionId(req);
 
-            if (!sessionId) {
+            if (!found) {
                 throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
             }
 
-            const session = await sessionRepository.findById(sessionId);
+            const session = await sessionRepository.findById(found.sessionId);
             if (!session) {
                 throw new AppError(401, 'UNAUTHENTICATED', 'Invalid or expired session.');
             }
@@ -53,7 +51,10 @@ export function createRequireAuth(
             if (session.expiresAt.getTime() - now < RENEWAL_THRESHOLD_MS) {
                 const newExpiresAt = new Date(now + SESSION_TTL_MS);
                 await sessionRepository.updateExpiresAt(session.id, newExpiresAt);
-                setSessionCookie(res, { ...session, expiresAt: newExpiresAt });
+                // Solo el navegador necesita la cookie renovada; la app nativa conserva su token.
+                if (found.source === 'cookie') {
+                    setSessionCookie(res, { ...session, expiresAt: newExpiresAt });
+                }
             }
 
             req.userId = user.id;

@@ -19,6 +19,8 @@ export function createMatchRouter(
     requireAuth: ReturnType<typeof createRequireAuth>,
 ): Router {
     const router = Router();
+    // Partidos del árbitro autenticado. Debe ir antes de '/:id' o "mine" se tomaría como un id.
+    router.get('/mine', requireAuth, controller.listMine);
     // Detalle público
     router.get('/:id', publicReadRateLimiter, controller.getByIdPublic);
     router.patch('/:id', requireAuth, controller.update);
@@ -26,6 +28,9 @@ export function createMatchRouter(
     router.post('/:id/start', requireAuth, controller.start);
     router.post('/:id/finish', requireAuth, controller.finish);
     router.post('/:id/reopen', requireAuth, controller.reopen);
+    // Árbitros asignados
+    router.get('/:id/referees', requireAuth, controller.getReferees);
+    router.put('/:id/referees', requireAuth, controller.setReferees);
     router.delete('/:id', requireAuth, controller.delete);
     return router;
 }

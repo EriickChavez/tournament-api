@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import express from 'express';
+import express, { Router } from 'express';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -58,49 +58,68 @@ app.use(
 app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
 
+// Fuera de la API versionada: infraestructura y archivos estáticos (sus URLs ya están guardadas en la base).
 app.use(healthRouter);
-app.use('/auth', authRouter);
-app.use('/tournaments', tournamentRouter);
-app.use('/tournaments/:tournamentId/categories', tournamentCategoryRouter);
-app.use('/categories', categoryRouter);
-app.use('/tournaments/:tournamentId/teams', tournamentTeamRouter);
-app.use('/teams', teamRouter);
-app.use('/teams/:teamId/players', teamPlayersRouter);
-app.use('/tournaments/:tournamentId/players', tournamentPlayerRouter);
-app.use('/players', playerRouter);
-app.use('/tournaments/:tournamentId/import', tournamentImportRouter);
-app.use('/tournaments/:tournamentId/matches', tournamentMatchRouter);
-app.use('/matches', matchRouter);
-app.use('/matches/:matchId/events', matchEventRouter);
-app.use('/match-events', standaloneMatchEventRouter);
-app.use('/tournaments/:tournamentId/categories/:categoryId', standingsRouter);
-app.use(
-    '/tournaments/:tournamentId/categories/:categoryId/phases',
-    tournamentCategoryPhaseRouter,
-);
-app.use('/tournaments/:tournamentId', categoryClosureRouter);
-app.use('/tournaments/:tournamentId', competitionStateRouter);
-app.use('/phases', phaseRouter);
-app.use('/phases/:phaseId/standings', phaseStandingsRouter);
-app.use('/phases/:phaseId/bracket', bracketRouter);
-app.use('/phases/:phaseId', phaseClosureRouter);
-app.use('/phase-groups', phaseGroupRouter);
-app.use('/tournaments/:tournamentId/members', memberRouter);
-app.use('/users', userLookupRouter);
-app.use('/tournaments/:id/branding', brandingRouter);
 app.use('/branding', express.static(join(process.cwd(), 'public', 'branding')));
-app.use('/sponsors', publicAppSponsorRouter);
 app.use('/uploads/app-sponsors', express.static(join(process.cwd(), 'public', 'app-sponsors')));
-
-// Tournament sponsors
-app.use('/tournaments/:tournamentId/sponsors', tournamentSponsorRouter);
 app.use(
     '/uploads/tournament-sponsors',
     express.static(join(process.cwd(), 'public', 'tournament-sponsors')),
 );
 
-app.use('/superadmin', superAdminRouter);
-app.use('/superadmin/app-sponsors', adminAppSponsorRouter);
+// API versionada. Dentro de v1 solo se agregan campos y endpoints; lo que rompa el contrato va en /v2.
+const v1 = Router();
+v1.use((_req, res, next) => {
+    res.setHeader('X-API-Version', '1');
+    next();
+});
+
+v1.use('/auth', authRouter);
+v1.use('/tournaments', tournamentRouter);
+v1.use('/tournaments/:tournamentId/categories', tournamentCategoryRouter);
+v1.use('/categories', categoryRouter);
+v1.use('/tournaments/:tournamentId/teams', tournamentTeamRouter);
+v1.use('/teams', teamRouter);
+v1.use('/teams/:teamId/players', teamPlayersRouter);
+v1.use('/tournaments/:tournamentId/players', tournamentPlayerRouter);
+v1.use('/players', playerRouter);
+v1.use('/tournaments/:tournamentId/import', tournamentImportRouter);
+v1.use('/tournaments/:tournamentId/matches', tournamentMatchRouter);
+v1.use('/matches', matchRouter);
+v1.use('/matches/:matchId/events', matchEventRouter);
+v1.use('/match-events', standaloneMatchEventRouter);
+v1.use('/tournaments/:tournamentId/categories/:categoryId', standingsRouter);
+v1.use(
+    '/tournaments/:tournamentId/categories/:categoryId/phases',
+    tournamentCategoryPhaseRouter,
+);
+v1.use('/tournaments/:tournamentId', categoryClosureRouter);
+v1.use('/tournaments/:tournamentId', competitionStateRouter);
+v1.use('/phases', phaseRouter);
+v1.use('/phases/:phaseId/standings', phaseStandingsRouter);
+v1.use('/phases/:phaseId/bracket', bracketRouter);
+v1.use('/phases/:phaseId', phaseClosureRouter);
+v1.use('/phase-groups', phaseGroupRouter);
+v1.use('/tournaments/:tournamentId/members', memberRouter);
+v1.use('/users', userLookupRouter);
+v1.use('/tournaments/:id/branding', brandingRouter);
+v1.use('/sponsors', publicAppSponsorRouter);
+
+// Tournament sponsors
+v1.use('/tournaments/:tournamentId/sponsors', tournamentSponsorRouter);
+
+v1.use('/superadmin', superAdminRouter);
+v1.use('/superadmin/app-sponsors', adminAppSponsorRouter);
+
+app.use('/v1', v1);
+
+// Alias legacy (sin prefijo): mismas rutas que /v1, marcadas como obsoletas.
+// Retíralo cuando ningún cliente lo use (el encabezado Deprecation permite detectarlo en los logs).
+app.use((req, res, next) => {
+    if (!req.path.startsWith('/v1')) res.setHeader('Deprecation', 'true');
+    next();
+}, v1);
+
 app.use(notFoundHandler);
 app.use(errorHandler);
 

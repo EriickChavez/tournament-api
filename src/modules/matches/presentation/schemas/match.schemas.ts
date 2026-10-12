@@ -58,3 +58,16 @@ export const listMatchesQuerySchema = z
         phaseId: z.string().uuid().optional(),
     })
     .merge(paginationQuerySchema);
+
+export const listMyMatchesQuerySchema = z
+    .object({
+        tournamentId: z.string().uuid().optional(),
+        status: matchStatusSchema.optional(),
+        from: z.string().datetime({ offset: true }).optional(),
+        to: z.string().datetime({ offset: true }).optional(),
+    })
+    .merge(paginationQuerySchema);
+
+export const setMatchRefereesSchema = z.object({
+    userIds: z.array(z.string().uuid()).max(10),
+});

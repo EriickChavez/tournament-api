@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, integer } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, integer, primaryKey, index } from 'drizzle-orm/pg-core';
 import { tournaments } from '../../../tournaments/infrastructure/database/schema.js';
 import { categories } from '../../../categories/infrastructure/database/schema.js';
 import { teams } from '../../../teams/infrastructure/database/schema.js';
@@ -38,3 +38,22 @@ export const matches = pgTable('matches', {
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+// Árbitros asignados a un partido. Sin filas = cualquier admin puede operar la cédula.
+export const matchReferees = pgTable(
+    'match_referees',
+    {
+        matchId: uuid('match_id')
+            .notNull()
+            .references(() => matches.id, { onDelete: 'cascade' }),
+        userId: uuid('user_id')
+            .notNull()
+            .references(() => users.id, { onDelete: 'cascade' }),
+        assignedByUserId: uuid('assigned_by_user_id').references(() => users.id),
+        createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    },
+    (t) => [
+        primaryKey({ columns: [t.matchId, t.userId] }),
+        index('match_referees_user_idx').on(t.userId),
+    ],
+);

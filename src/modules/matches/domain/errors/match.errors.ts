@@ -93,3 +93,19 @@ export class MatchHasEventsError extends AppError {
         );
     }
 }
+
+export class NotAssignedToMatchError extends AppError {
+    constructor() {
+        super(403, 'NOT_ASSIGNED_TO_MATCH', 'You are not assigned as a referee of this match.');
+    }
+}
+
+export class InvalidRefereeError extends AppError {
+    constructor() {
+        super(
+            400,
+            'INVALID_REFEREE',
+            'Every referee must be a member of this tournament with the admin or owner role.',
+        );
+    }
+}

@@ -1,5 +1,6 @@
 import { DrizzleMatchRepository } from './infrastructure/database/drizzle-match.repository.js';
 import { DrizzleMatchLifecycleRepository } from './infrastructure/database/drizzle-match-lifecycle.repository.js';
+import { DrizzleMatchRefereeRepository } from './infrastructure/database/drizzle-match-referee.repository.js';
 import { DrizzleMatchEventRepository } from '../match-events/infrastructure/database/drizzle-match-event.repository.js';
 import { DrizzleTournamentRepository } from '../tournaments/infrastructure/database/drizzle-tournament.repository.js';
 import { DrizzleTournamentMemberRepository } from '../tournaments/infrastructure/database/drizzle-tournament-member.repository.js';
@@ -15,6 +16,8 @@ import { DeleteMatchUseCase } from './application/use-cases/delete-match.use-cas
 import { ListMatchesUseCase } from './application/use-cases/list-matches.use-case.js';
 import { GetMatchUseCase } from './application/use-cases/get-match.use-case.js';
 import { MatchLifecycleUseCase } from './application/use-cases/match-lifecycle.use-case.js';
+import { MatchRefereesUseCase } from './application/use-cases/match-referees.use-case.js';
+import { ListMyMatchesUseCase } from './application/use-cases/list-my-matches.use-case.js';
 import { MatchController } from './presentation/match.controller.js';
 import { createMatchRouter, createTournamentMatchRouter } from './presentation/match.routes.js';
 import { requireAuth } from '../auth/auth.module.js';
@@ -24,6 +27,7 @@ import { competitionGuard } from '../competition-state/competition-state.module.
 
 const matchRepository = new DrizzleMatchRepository();
 const matchLifecycleRepository = new DrizzleMatchLifecycleRepository();
+const matchRefereeRepository = new DrizzleMatchRefereeRepository();
 const matchEventRepository = new DrizzleMatchEventRepository();
 const tournamentRepository = new DrizzleTournamentRepository();
 const tournamentMemberRepository = new DrizzleTournamentMemberRepository();
@@ -44,7 +48,13 @@ const updateMatchUseCase = new UpdateMatchUseCase(
 );
 const matchLifecycleUseCase = new MatchLifecycleUseCase(
     matchRepository, matchLifecycleRepository, matchEventRepository, tournamentMemberRepository,
-    recalculateMatchStatsService, competitionGuard, bracketAdvancer,
+    recalculateMatchStatsService, competitionGuard, matchRefereeRepository, bracketAdvancer,
+);
+const matchRefereesUseCase = new MatchRefereesUseCase(
+    matchRepository, matchRefereeRepository, tournamentMemberRepository, competitionGuard,
+);
+const listMyMatchesUseCase = new ListMyMatchesUseCase(
+    matchRefereeRepository, teamRepository, categoryRepository,
 );
 const deleteMatchUseCase = new DeleteMatchUseCase(
     matchRepository, tournamentMemberRepository, recalculateMatchStatsService,
@@ -69,6 +79,8 @@ const matchController = new MatchController(
     listMatchesUseCase,
     getMatchUseCase,
     matchLifecycleUseCase,
+    matchRefereesUseCase,
+    listMyMatchesUseCase,
 );
 
 export const tournamentMatchRouter = createTournamentMatchRouter(matchController, requireAuth);

@@ -9,7 +9,10 @@ export function toPublicMatchEvent(event: MatchEvent) {
         teamId: event.teamId,
         playerId: event.playerId,
         assistedByPlayerId: event.assistedByPlayerId,
+        substitutePlayerId: event.substitutePlayerId,
         description: event.description,
         clientEventId: event.clientEventId,
+        occurredAt: event.occurredAt ? event.occurredAt.toISOString() : null,
+        derivedFromEventId: event.derivedFromEventId,
     };
 }
