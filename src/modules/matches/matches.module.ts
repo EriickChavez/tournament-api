@@ -1,4 +1,6 @@
 import { DrizzleMatchRepository } from './infrastructure/database/drizzle-match.repository.js';
+import { DrizzleMatchLifecycleRepository } from './infrastructure/database/drizzle-match-lifecycle.repository.js';
+import { DrizzleMatchEventRepository } from '../match-events/infrastructure/database/drizzle-match-event.repository.js';
 import { DrizzleTournamentRepository } from '../tournaments/infrastructure/database/drizzle-tournament.repository.js';
 import { DrizzleTournamentMemberRepository } from '../tournaments/infrastructure/database/drizzle-tournament-member.repository.js';
 import { DrizzleCategoryRepository } from '../categories/infrastructure/database/drizzle-category.repository.js';
@@ -12,20 +14,23 @@ import { UpdateMatchUseCase } from './application/use-cases/update-match.use-cas
 import { DeleteMatchUseCase } from './application/use-cases/delete-match.use-case.js';
 import { ListMatchesUseCase } from './application/use-cases/list-matches.use-case.js';
 import { GetMatchUseCase } from './application/use-cases/get-match.use-case.js';
+import { MatchLifecycleUseCase } from './application/use-cases/match-lifecycle.use-case.js';
 import { MatchController } from './presentation/match.controller.js';
 import { createMatchRouter, createTournamentMatchRouter } from './presentation/match.routes.js';
 import { requireAuth } from '../auth/auth.module.js';
 import { recalculateMatchStatsService } from '../standings/standings.module.js';
 import { bracketAdvancer } from '../brackets/brackets.module.js';
+import { competitionGuard } from '../competition-state/competition-state.module.js';
 
 const matchRepository = new DrizzleMatchRepository();
+const matchLifecycleRepository = new DrizzleMatchLifecycleRepository();
+const matchEventRepository = new DrizzleMatchEventRepository();
 const tournamentRepository = new DrizzleTournamentRepository();
 const tournamentMemberRepository = new DrizzleTournamentMemberRepository();
 const categoryRepository = new DrizzleCategoryRepository();
 const teamRepository = new DrizzleTeamRepository();
 const phaseRepository = new DrizzlePhaseRepository();
 const phaseGroupRepository = new DrizzlePhaseGroupRepository();
-import { competitionGuard } from '../competition-state/competition-state.module.js';
 
 const createMatchUseCase = new CreateMatchUseCase(
     matchRepository, tournamentRepository, tournamentMemberRepository,
@@ -35,7 +40,11 @@ const createMatchUseCase = new CreateMatchUseCase(
 const updateMatchUseCase = new UpdateMatchUseCase(
     matchRepository, tournamentMemberRepository, categoryRepository, teamRepository,
     recalculateMatchStatsService, phaseRepository, phaseGroupRepository,
-    competitionGuard, bracketAdvancer,
+    competitionGuard, matchEventRepository, bracketAdvancer,
+);
+const matchLifecycleUseCase = new MatchLifecycleUseCase(
+    matchRepository, matchLifecycleRepository, matchEventRepository, tournamentMemberRepository,
+    recalculateMatchStatsService, competitionGuard, bracketAdvancer,
 );
 const deleteMatchUseCase = new DeleteMatchUseCase(
     matchRepository, tournamentMemberRepository, recalculateMatchStatsService,
@@ -59,6 +68,7 @@ const matchController = new MatchController(
     deleteMatchUseCase,
     listMatchesUseCase,
     getMatchUseCase,
+    matchLifecycleUseCase,
 );
 
 export const tournamentMatchRouter = createTournamentMatchRouter(matchController, requireAuth);

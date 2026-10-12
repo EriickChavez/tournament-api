@@ -57,3 +57,39 @@ export class InvalidPhaseGroupForMatchError extends AppError {
         );
     }
 }
+
+export class MatchNotInProgressError extends AppError {
+    constructor() {
+        super(
+            409,
+            'MATCH_NOT_IN_PROGRESS',
+            'Match events can only be registered or removed while the match is in progress.',
+        );
+    }
+}
+
+export class InvalidMatchTransitionError extends AppError {
+    constructor(from: string, to: string) {
+        super(409, 'INVALID_MATCH_TRANSITION', `Cannot change a match from "${from}" to "${to}".`);
+    }
+}
+
+export class UseLifecycleEndpointsError extends AppError {
+    constructor() {
+        super(
+            400,
+            'USE_LIFECYCLE_ENDPOINTS',
+            'Use POST /matches/:id/start, /finish or /reopen to change the match to or from in_progress/finished.',
+        );
+    }
+}
+
+export class MatchHasEventsError extends AppError {
+    constructor() {
+        super(
+            409,
+            'MATCH_HAS_EVENTS',
+            'Teams or category cannot be changed while the match has registered events.',
+        );
+    }
+}

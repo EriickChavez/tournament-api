@@ -4,6 +4,10 @@ import type { MatchEventRepository } from '../../../match-events/domain/reposito
 import type { TeamStandingRepository } from '../../domain/repositories/team-standing.repository.js';
 import type { TopScorerRepository } from '../../domain/repositories/top-scorer.repository.js';
 import type { CardCountRepository } from '../../domain/repositories/card-count.repository.js';
+import {
+    computeScoreFromEvents,
+    isScorerGoal,
+} from '../../../match-events/domain/services/score-from-events.js';
 
 /**
  * Recalcula materializaciones (posiciones, goleadores, tarjetas) a partir de
@@ -52,7 +56,7 @@ export class RecalculateMatchStatsService {
 
     /**
      * Goles de cada lado. Si el partido tiene marcador se usa ese (y se ahorra la
-     * consulta de eventos); si no, se cuentan los eventos 'gol' como antes.
+     * consulta de eventos); si no, se calculan desde los eventos (gol, gol_penal, autogol).
      */
     private async resolveGoals(match: Match): Promise<{ homeGoals: number; awayGoals: number }> {
         if (match.homeScore !== null && match.awayScore !== null) {
@@ -60,10 +64,8 @@ export class RecalculateMatchStatsService {
         }
 
         const events = await this.matchEventRepository.findByMatchId(match.id);
-        return {
-            homeGoals: events.filter((e) => e.eventType === 'gol' && e.teamId === match.homeTeamId).length,
-            awayGoals: events.filter((e) => e.eventType === 'gol' && e.teamId === match.awayTeamId).length,
-        };
+        const { homeScore, awayScore } = computeScoreFromEvents(match, events);
+        return { homeGoals: homeScore, awayGoals: awayScore };
     }
 
     private async recalculateTeamStanding(
@@ -130,7 +132,8 @@ export class RecalculateMatchStatsService {
         for (const match of finishedMatches) {
             const events = await this.matchEventRepository.findByMatchId(match.id);
             for (const event of events) {
-                if (event.eventType === 'gol' && event.playerId) {
+                // gol y gol_penal cuentan para el goleador; el autogol no.
+                if (isScorerGoal(event.eventType) && event.playerId) {
                     goalsByPlayer.set(event.playerId, (goalsByPlayer.get(event.playerId) ?? 0) + 1);
                 }
                 if (event.eventType === 'gol' && event.assistedByPlayerId) {

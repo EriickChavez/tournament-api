@@ -22,6 +22,10 @@ export function createMatchRouter(
     // Detalle público
     router.get('/:id', publicReadRateLimiter, controller.getByIdPublic);
     router.patch('/:id', requireAuth, controller.update);
+    // Ciclo de vida de la cédula
+    router.post('/:id/start', requireAuth, controller.start);
+    router.post('/:id/finish', requireAuth, controller.finish);
+    router.post('/:id/reopen', requireAuth, controller.reopen);
     router.delete('/:id', requireAuth, controller.delete);
     return router;
 }

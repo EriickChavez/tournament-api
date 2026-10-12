@@ -4,6 +4,7 @@ import type { UpdateMatchUseCase } from '../application/use-cases/update-match.u
 import type { DeleteMatchUseCase } from '../application/use-cases/delete-match.use-case.js';
 import type { ListMatchesUseCase } from '../application/use-cases/list-matches.use-case.js';
 import type { GetMatchUseCase } from '../application/use-cases/get-match.use-case.js';
+import type { MatchLifecycleUseCase } from '../application/use-cases/match-lifecycle.use-case.js';
 import {
     createMatchSchema,
     updateMatchSchema,
@@ -20,6 +21,7 @@ export class MatchController {
         private readonly deleteMatchUseCase: DeleteMatchUseCase,
         private readonly listMatchesUseCase: ListMatchesUseCase,
         private readonly getMatchUseCase: GetMatchUseCase,
+        private readonly matchLifecycleUseCase: MatchLifecycleUseCase,
     ) { }
 
     listByTournament = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -96,6 +98,45 @@ export class MatchController {
                 round: input.round,
                 homePenalties: input.homePenalties,
                 awayPenalties: input.awayPenalties,
+            });
+            res.status(200).json({ match: toPublicMatch(match) });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    start = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            if (!req.userId) throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
+            const match = await this.matchLifecycleUseCase.start({
+                matchId: req.params.id as string,
+                userId: req.userId,
+            });
+            res.status(200).json({ match: toPublicMatch(match) });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    finish = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            if (!req.userId) throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
+            const match = await this.matchLifecycleUseCase.finish({
+                matchId: req.params.id as string,
+                userId: req.userId,
+            });
+            res.status(200).json({ match: toPublicMatch(match) });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    reopen = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            if (!req.userId) throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
+            const match = await this.matchLifecycleUseCase.reopen({
+                matchId: req.params.id as string,
+                userId: req.userId,
             });
             res.status(200).json({ match: toPublicMatch(match) });
         } catch (error) {

@@ -10,5 +10,6 @@ export function toPublicMatchEvent(event: MatchEvent) {
         playerId: event.playerId,
         assistedByPlayerId: event.assistedByPlayerId,
         description: event.description,
+        clientEventId: event.clientEventId,
     };
 }

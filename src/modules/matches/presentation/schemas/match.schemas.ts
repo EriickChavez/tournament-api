@@ -9,6 +9,9 @@ export const matchStatusSchema = z.enum([
     'postponed',
 ]);
 
+// Al crear solo se puede programar, cancelar o posponer: iniciar y finalizar van por /start y /finish.
+const createMatchStatusSchema = z.enum(['scheduled', 'cancelled', 'postponed']);
+
 const scoreSchema = z.number().int().min(0).max(99);
 
 export const createMatchSchema = z.object({
@@ -17,7 +20,7 @@ export const createMatchSchema = z.object({
     awayTeamId: z.string().uuid(),
     scheduledAt: z.string().datetime({ offset: true }),
     venue: z.string().max(200).optional(),
-    status: matchStatusSchema.optional(),
+    status: createMatchStatusSchema.optional(),
     phaseId: z.string().uuid().nullable().optional(),
     phaseGroupId: z.string().uuid().nullable().optional(),
     round: z.number().int().positive().nullable().optional(),

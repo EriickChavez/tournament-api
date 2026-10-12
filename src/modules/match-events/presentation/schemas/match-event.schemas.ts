@@ -1,6 +1,15 @@
 import { z } from 'zod';
 
-const eventTypeEnum = z.enum(['gol', 'asistencia', 'tarjeta_amarilla', 'tarjeta_roja', 'cambio', 'otro']);
+const eventTypeEnum = z.enum([
+    'gol',
+    'gol_penal',
+    'autogol',
+    'asistencia',
+    'tarjeta_amarilla',
+    'tarjeta_roja',
+    'cambio',
+    'otro',
+]);
 
 export const createMatchEventSchema = z.object({
     eventType: eventTypeEnum,
@@ -9,4 +18,5 @@ export const createMatchEventSchema = z.object({
     playerId: z.string().uuid().optional(),
     assistedByPlayerId: z.string().uuid().optional(),
     description: z.string().max(255).optional(),
+    clientEventId: z.string().uuid().optional(),
 });

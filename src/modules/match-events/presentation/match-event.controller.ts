@@ -28,8 +28,13 @@ export class MatchEventController {
             if (!req.userId) throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
             const matchId = req.params.matchId as string;
             const input = createMatchEventSchema.parse(req.body);
-            const event = await this.createMatchEventUseCase.execute({ matchId, userId: req.userId, ...input });
-            res.status(201).json({ event: toPublicMatchEvent(event) });
+            const { event, duplicated } = await this.createMatchEventUseCase.execute({
+                matchId,
+                userId: req.userId,
+                ...input,
+            });
+            // 200 si fue un reintento (mismo clientEventId), 201 si se creó.
+            res.status(duplicated ? 200 : 201).json({ event: toPublicMatchEvent(event) });
         } catch (error) {
             next(error);
         }

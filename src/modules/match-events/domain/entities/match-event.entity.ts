@@ -1,4 +1,12 @@
-export type MatchEventType = 'gol' | 'asistencia' | 'tarjeta_amarilla' | 'tarjeta_roja' | 'cambio' | 'otro';
+export type MatchEventType =
+    | 'gol'
+    | 'gol_penal'
+    | 'autogol'
+    | 'asistencia'
+    | 'tarjeta_amarilla'
+    | 'tarjeta_roja'
+    | 'cambio'
+    | 'otro';
 
 export interface MatchEvent {
     id: string;
@@ -11,6 +19,7 @@ export interface MatchEvent {
     playerId: string | null;
     assistedByPlayerId: string | null;
     description: string | null;
+    clientEventId: string | null;
     createdByUserId: string | null;
     updatedByUserId: string | null;
     createdAt: Date;

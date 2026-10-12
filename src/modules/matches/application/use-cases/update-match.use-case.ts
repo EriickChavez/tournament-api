@@ -1,6 +1,7 @@
 import { env } from '../../../../config/env.js';
 import type { Match, MatchStatus } from '../../domain/entities/match.entity.js';
 import type { MatchRepository } from '../../domain/repositories/match.repository.js';
+import type { MatchEventRepository } from '../../../match-events/domain/repositories/match-event.repository.js';
 import type { TournamentMemberRepository } from '../../../tournaments/domain/repositories/tournaments-member.repository.js';
 import type { CategoryRepository } from '../../../categories/domain/repositories/category.repository.js';
 import type { TeamRepository } from '../../../teams/domain/repositories/team.repository.js';
@@ -16,6 +17,8 @@ import {
     SameTeamMatchError,
     InvalidPhaseForMatchError,
     InvalidPhaseGroupForMatchError,
+    UseLifecycleEndpointsError,
+    MatchHasEventsError,
 } from '../../domain/errors/match.errors.js';
 import { resolvePenalties } from '../../domain/services/match-outcome.js';
 import type { MatchBracketSync } from '../ports/match-bracket-sync.port.js';
@@ -40,8 +43,9 @@ export class UpdateMatchUseCase {
         private readonly matchStatsRecalculator: MatchStatsRecalculator,
         private readonly phaseRepository: PhaseRepository,
         private readonly phaseGroupRepository: PhaseGroupRepository,
-        // Opcional: lo conecta el módulo de llaves para que el ganador avance solo.
         private readonly competitionGuard: CompetitionGuard,
+        private readonly matchEventRepository: MatchEventRepository,
+        // Opcional: lo conecta el módulo de llaves para que el ganador avance solo.
         private readonly matchBracketSync?: MatchBracketSync,
     ) { }
 
@@ -74,6 +78,27 @@ export class UpdateMatchUseCase {
         if (input.categoryId && input.categoryId !== match.categoryId) {
             await this.competitionGuard.assertNotFinished(input.categoryId);
         }
+
+        // Entrar o salir de in_progress/finished solo con start/finish/reopen: ahí se fija el
+        // marcador y se recalculan tablas y llave. Un partido finished no admite cambiar su estado.
+        if (input.status !== undefined && input.status !== match.status) {
+            const targetsLifecycle = input.status === 'in_progress' || input.status === 'finished';
+            if (targetsLifecycle || match.status === 'finished') {
+                throw new UseLifecycleEndpointsError();
+            }
+        }
+
+        const changesTeamsOrCategory =
+            (input.categoryId !== undefined && input.categoryId !== match.categoryId) ||
+            (input.homeTeamId !== undefined && input.homeTeamId !== match.homeTeamId) ||
+            (input.awayTeamId !== undefined && input.awayTeamId !== match.awayTeamId);
+
+        // Los eventos guardan el teamId y la categoría: cambiarlos dejaría la cédula incoherente.
+        if (changesTeamsOrCategory) {
+            const events = await this.matchEventRepository.findByMatchId(match.id);
+            if (events.length > 0) throw new MatchHasEventsError();
+        }
+
         // Valida los penales y limpia los que quedaron obsoletos si el marcador ya no es empate.
         // homeScore/awayScore se derivan de los eventos de gol, no del input.
         const penalties = resolvePenalties(match, {
@@ -147,10 +172,6 @@ export class UpdateMatchUseCase {
                 penalties.awayPenalties !== undefined ? penalties.awayPenalties : match.awayPenalties,
         });
 
-        const previousStatus = match.status;
-
-        const shouldDefaultScoresToZero = input.status === 'finished' && match.homeScore === null;
-
         const updated = await this.matchRepository.update(input.matchId, {
             categoryId: input.categoryId,
             homeTeamId: input.homeTeamId,
@@ -161,32 +182,20 @@ export class UpdateMatchUseCase {
             phaseId: input.phaseId,
             phaseGroupId: input.phaseGroupId,
             round: input.round,
-            ...(shouldDefaultScoresToZero ? { homeScore: 0, awayScore: 0 } : {}),
             homePenalties: penalties.homePenalties,
             awayPenalties: penalties.awayPenalties,
             updatedByUserId: input.userId,
         });
 
-        // Recalcular si entra/sale de finished, o si un partido finished cambia de equipos/categoría.
-        const becameOrLeftFinished =
-            input.status !== undefined &&
-            input.status !== previousStatus &&
-            (input.status === 'finished' || previousStatus === 'finished');
-
-        const structuralChangeOnFinished =
-            previousStatus === 'finished' &&
-            (input.categoryId !== undefined ||
-                input.homeTeamId !== undefined ||
-                input.awayTeamId !== undefined);
-
-        // Si el partido queda finished (incluye cambiar solo el marcador de uno ya terminado), se recalcula.
-        if (becameOrLeftFinished || structuralChangeOnFinished || updated.status === 'finished') {
+        // Un partido finished puede cambiar de fase (la eliminatoria no suma en la tabla general)
+        // o de equipos/categoría (sin eventos): se recalcula.
+        if (updated.status === 'finished') {
             await this.matchStatsRecalculator.recalculateForMatch(input.matchId);
         }
 
         // recalculateForMatch solo ve los equipos/categoría NUEVOS. Si un partido finished
         // cambió de equipos o categoría, los anteriores se quedarían con puntos fantasma.
-        if (structuralChangeOnFinished) {
+        if (match.status === 'finished' && changesTeamsOrCategory) {
             await this.matchStatsRecalculator.recalculateForTeams(match.tournamentId, match.categoryId, [
                 match.homeTeamId,
                 match.awayTeamId,

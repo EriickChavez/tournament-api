@@ -1,0 +1,2 @@
+ALTER TABLE "match_events" ADD COLUMN "client_event_id" uuid;--> statement-breakpoint
+CREATE UNIQUE INDEX "match_events_match_client_event_uq" ON "match_events" USING btree ("match_id","client_event_id");

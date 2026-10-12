@@ -8,22 +8,20 @@ import { ListMatchEventsUseCase } from './application/use-cases/list-match-event
 import { MatchEventController } from './presentation/match-event.controller.js';
 import { createMatchEventRouter, createStandaloneMatchEventRouter } from './presentation/match-event.routes.js';
 import { requireAuth } from '../auth/auth.module.js';
-import { recalculateMatchStatsService } from '../standings/standings.module.js';
+import { competitionGuard } from '../competition-state/competition-state.module.js';
 
 const matchEventRepository = new DrizzleMatchEventRepository();
 const matchRepository = new DrizzleMatchRepository();
 const tournamentMemberRepository = new DrizzleTournamentMemberRepository();
 const playerRepository = new DrizzlePlayerRepository();
-import { competitionGuard } from '../competition-state/competition-state.module.js';
 
 const createMatchEventUseCase = new CreateMatchEventUseCase(
     matchEventRepository, matchRepository, tournamentMemberRepository,
-    playerRepository, recalculateMatchStatsService, competitionGuard,
+    playerRepository, competitionGuard,
 );
 
 const deleteMatchEventUseCase = new DeleteMatchEventUseCase(
-    matchEventRepository, tournamentMemberRepository, recalculateMatchStatsService,
-    matchRepository, competitionGuard,
+    matchEventRepository, tournamentMemberRepository, matchRepository, competitionGuard,
 );
 
 const listMatchEventsUseCase = new ListMatchEventsUseCase(matchEventRepository, matchRepository);

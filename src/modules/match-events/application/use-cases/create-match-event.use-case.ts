@@ -13,11 +13,6 @@ import {
 } from '../../domain/errors/match-event.errors.js';
 import { CompetitionGuard } from '../../../../shared/ports/competition-guard.port.js';
 
-/** Puerto mínimo para no acoplar el use case a la clase concreta de standings. */
-export interface MatchStatsRecalculator {
-    recalculateForMatch(matchId: string): Promise<void>;
-}
-
 function isOwnerOrAdmin(roleId: string): boolean {
     return roleId === env.OWNER_ROLE_ID || roleId === env.ADMIN_ROLE_ID;
 }
@@ -28,7 +23,6 @@ export class CreateMatchEventUseCase {
         private readonly matchRepository: MatchRepository,
         private readonly tournamentMemberRepository: TournamentMemberRepository,
         private readonly playerRepository: PlayerRepository,
-        private readonly matchStatsRecalculator: MatchStatsRecalculator,
         private readonly competitionGuard: CompetitionGuard,
     ) { }
 
@@ -41,7 +35,8 @@ export class CreateMatchEventUseCase {
         playerId?: string | undefined;
         assistedByPlayerId?: string | undefined;
         description?: string | undefined;
-    }): Promise<MatchEvent> {
+        clientEventId?: string | undefined;
+    }): Promise<{ event: MatchEvent; duplicated: boolean }> {
         const match = await this.matchRepository.findById(input.matchId);
         if (!match) throw new MatchNotFoundError();
 
@@ -74,7 +69,8 @@ export class CreateMatchEventUseCase {
             }
         }
 
-        const created = await this.matchEventRepository.create({
+        // Evento + marcador en una sola transacción. Stats y llave se recalculan al finalizar.
+        return this.matchEventRepository.createAndSyncScore({
             tournamentId: match.tournamentId,
             categoryId: match.categoryId,
             matchId: input.matchId,
@@ -84,20 +80,8 @@ export class CreateMatchEventUseCase {
             playerId: input.playerId,
             assistedByPlayerId: input.assistedByPlayerId,
             description: input.description,
+            clientEventId: input.clientEventId,
             createdByUserId: input.userId,
         });
-
-        // Sincronizar marcador del partido contando los eventos de gol.
-        if (input.eventType === 'gol') {
-            const allEvents = await this.matchEventRepository.findByMatchId(input.matchId);
-            const homeScore = allEvents.filter((e) => e.eventType === 'gol' && e.teamId === match.homeTeamId).length;
-            const awayScore = allEvents.filter((e) => e.eventType === 'gol' && e.teamId === match.awayTeamId).length;
-            await this.matchRepository.update(input.matchId, { homeScore, awayScore, updatedByUserId: input.userId });
-        }
-
-        // El servicio solo cuenta partidos finished; si aún no lo está, no cambia nada.
-        await this.matchStatsRecalculator.recalculateForMatch(input.matchId);
-
-        return created;
     }
 }
