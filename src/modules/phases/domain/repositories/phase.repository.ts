@@ -29,6 +29,15 @@ export interface PhaseRepository {
     ): Promise<Phase>;
     delete(id: string): Promise<void>;
     countMatchesByPhaseId(phaseId: string): Promise<number>;
+    countMatchesByPhaseId(phaseId: string): Promise<number>;
+    /**
+     * Borra los partidos de la fase y la fase misma en una sola transacción.
+     * Devuelve cuántos partidos se borraron y los equipos de los partidos finalizados
+     * (para recalcular posiciones, goleadores y tarjetas después).
+     */
+    deleteWithMatches(
+        phaseId: string,
+    ): Promise<{ deletedMatches: number; finishedTeamIds: string[] }>;
 }
 
 export interface PhaseGroupRepository {

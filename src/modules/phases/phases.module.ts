@@ -22,6 +22,8 @@ import { PhaseController } from './presentation/phase.controller.js';
 import { createPhaseRoutes } from './presentation/phase.routes.js';
 import { DrizzleMatchRepository } from '../matches/infrastructure/database/drizzle-match.repository.js';
 import { PhaseStructureGuardService } from './application/services/phase-structure-guard.service.js';
+import { competitionGuard } from '../competition-state/competition-state.module.js';
+import { recalculateMatchStatsService } from '../standings/standings.module.js';
 
 const phaseRepository = new DrizzlePhaseRepository();
 const phaseGroupRepository = new DrizzlePhaseGroupRepository();
@@ -47,7 +49,12 @@ const listPhases = new ListPhasesUseCase(
 );
 const getPhase = new GetPhaseUseCase(phaseRepository);
 const updatePhase = new UpdatePhaseUseCase(phaseRepository, tournamentMemberRepository);
-const deletePhase = new DeletePhaseUseCase(phaseRepository, tournamentMemberRepository);
+const deletePhase = new DeletePhaseUseCase(
+    phaseRepository,
+    tournamentMemberRepository,
+    competitionGuard,
+    recalculateMatchStatsService,
+);
 const phaseStructureGuard = new PhaseStructureGuardService(new DrizzleMatchRepository());
 
 const createPhaseGroup = new CreatePhaseGroupUseCase(

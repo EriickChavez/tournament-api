@@ -94,11 +94,15 @@ export class PhaseController {
     remove = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             if (!req.userId) throw new AppError(401, 'UNAUTHENTICATED', 'No session found.');
-            await this.deletePhase.execute({
+            const result = await this.deletePhase.execute({
                 id: req.params.id as string,
                 userId: req.userId,
+                force: req.query.force === 'true',
             });
-            res.json({ message: 'Phase deleted successfully' });
+            res.json({
+                message: 'Phase deleted successfully',
+                deletedMatches: result.deletedMatches,
+            });
         } catch (err) {
             next(err);
         }
@@ -179,4 +183,5 @@ export class PhaseController {
             next(err);
         }
     };
+
 }

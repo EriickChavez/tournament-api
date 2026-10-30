@@ -147,6 +147,40 @@ export class DrizzlePhaseRepository implements PhaseRepository {
             .where(eq(matches.phaseId, phaseId));
         return result?.value ?? 0;
     }
+
+    async deleteWithMatches(
+        phaseId: string,
+    ): Promise<{ deletedMatches: number; finishedTeamIds: string[] }> {
+        return db.transaction(async (tx) => {
+            // Los eventos y árbitros de cada partido se van en cascada; los nodos de llave
+            // que apuntaban a estos partidos quedan con match_id en null.
+            const removed = await tx
+                .delete(matches)
+                .where(eq(matches.phaseId, phaseId))
+                .returning({
+                    status: matches.status,
+                    homeTeamId: matches.homeTeamId,
+                    awayTeamId: matches.awayTeamId,
+                });
+
+            // Grupos, equipos inscritos, cierre, clasificados y llave se van en cascada.
+            const [row] = await tx
+                .delete(phases)
+                .where(eq(phases.id, phaseId))
+                .returning({ id: phases.id });
+            if (!row) throw new Error('Failed to delete phase');
+
+            const finishedTeamIds = new Set<string>();
+            for (const match of removed) {
+                if (match.status === 'finished') {
+                    finishedTeamIds.add(match.homeTeamId);
+                    finishedTeamIds.add(match.awayTeamId);
+                }
+            }
+
+            return { deletedMatches: removed.length, finishedTeamIds: [...finishedTeamIds] };
+        });
+    }
 }
 
 export class DrizzlePhaseGroupRepository implements PhaseGroupRepository {
